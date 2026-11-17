@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:layoutDirection="rtl">
+    <LinearLayout style="@style/GrowthScreen" android:padding="20dp">
+        <TextView style="@style/GrowthText.Section" android:text="اندازه‌گیری استاندارد دور کمر" />
+        <TextView style="@style/GrowthText" android:layout_marginBottom="12dp"
+            android:text="۱. فرد ایستاده و شکم رها باشد؛ اندازه‌گیری روی پوست یا لباس نازک انجام شود.\n\n۲. متر را در میانهٔ فاصلهٔ پایین‌ترین دندهٔ قابل لمس و بالای استخوان لگن قرار دهید.\n\n۳. متر افقی و بدون فشردن پوست دور بدن قرار گیرد.\n\n۴. عدد را در پایان یک بازدم معمولی بخوانید؛ شکم داخل داده نشود.\n\n۵. برای مقایسهٔ نوبت‌ها از همین محل و روش استفاده کنید. اگر عدد غیرمنتظره است، اندازه‌گیری را تکرار کنید." />
+        <TextView style="@style/GrowthText.Muted"
+            android:text="این نسبت درصد چربی بدن را محاسبه نمی‌کند. در بارداری، اختلال خوردن یا بیماری مؤثر بر قد/اندازهٔ شکم، تفسیر اختصاصی لازم است. مرجع روش اندازه‌گیری: WHO STEPS." />
+    </LinearLayout>
+</ScrollView>

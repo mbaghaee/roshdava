@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/GrowthCard" android:visibility="gone">
+    <LinearLayout style="@style/GrowthCardBody">
+        <TextView style="@style/GrowthText.Section" android:text="مقایسه با نوبت قبل" />
+        <TextView android:id="@+id/comparison_text" style="@style/GrowthText" android:textSize="14sp" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android" style="@style/GrowthCard">
+    <LinearLayout style="@style/GrowthCardBody">
+        <TextView android:id="@+id/visit_summary" style="@style/GrowthText.Section" android:textSize="14sp" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/open_assessment_button"
+            style="@style/GrowthButton.Outlined" android:text="مشاهدهٔ ارزیابی کامل و نمودارها" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/delete_button"
+            style="@style/GrowthButton.Outlined" android:text="حذف این سنجش" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

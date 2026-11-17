@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android" style="@style/GrowthCard">
+    <LinearLayout style="@style/GrowthCardBody">
+        <TextView android:id="@+id/patient_name" style="@style/GrowthText.Section" android:textSize="18sp" />
+        <TextView android:id="@+id/profile_summary" style="@style/GrowthText.Muted" android:textSize="13sp" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/open_profile_button"
+            style="@style/GrowthButton.Outlined" android:text="مشاهدهٔ پرونده و سنجش‌ها" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/follow_up_button"
+            style="@style/GrowthButton" android:text="سنجش جدید برای همین فرد" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

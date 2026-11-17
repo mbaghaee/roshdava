@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" style="@style/GrowthScreen">
+    <TextView android:id="@+id/result_title" style="@style/GrowthText.Title" android:text="نمای روشن از وضعیت امروز" />
+    <TextView android:id="@+id/result_subtitle" style="@style/GrowthText.Muted" android:textSize="13sp" android:layout_marginBottom="18dp" />
+    <include android:id="@+id/previous_comparison" layout="@layout/card_measurement_comparison" />
+    <com.google.android.material.card.MaterialCardView style="@style/GrowthCard" app:cardBackgroundColor="@color/growth_hero">
+        <LinearLayout style="@style/GrowthCardBody">
+            <TextView android:id="@+id/reference_group" style="@style/GrowthText"
+                android:textSize="13sp" android:textColor="@color/growth_hero_accent" />
+            <TextView android:id="@+id/bmi_value" style="@style/GrowthText.Title"
+                android:textSize="52sp" android:textColor="@color/white" tools:text="۱۸٫۵" />
+            <TextView android:id="@+id/bmi_label" style="@style/GrowthText.Muted" android:textColor="@color/growth_hero_soft"
+                android:textSize="13sp" android:text="شاخص توده بدنی  ·  kg/m²" />
+            <TextView android:id="@+id/weight_status" style="@style/GrowthText.Section" android:textSize="20sp"
+                android:layout_width="wrap_content" android:textColor="@color/white" />
+            <TextView android:id="@+id/age_sex" style="@style/GrowthText" android:textSize="13sp" android:textColor="@color/growth_hero_soft" />
+            <TextView android:id="@+id/measurements" style="@style/GrowthText" android:textSize="13sp" android:textColor="@color/growth_hero_soft" />
+            <ir.mbaghaee.bmi.BmiScaleView android:id="@+id/bmi_scale" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:minHeight="@dimen/bmi_gauge_height" android:saveEnabled="false" />
+            <TextView android:id="@+id/scale_description" style="@style/GrowthText.Muted" android:textSize="11sp" android:textColor="@color/growth_hero_soft" />
+            <TextView android:id="@+id/child_explanation" style="@style/GrowthText.Muted" android:textSize="11sp" android:textColor="@color/growth_hero_soft"
+                android:text="صفر یعنی میانهٔ مرجع؛ عدد منفی یعنی پایین‌تر و عدد مثبت یعنی بالاتر از میانه. جزئیات صدک و نمودارها در پایین آمده است." />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+    <include android:id="@+id/pregnancy_assessment" layout="@layout/card_pregnancy_assessment" />
+    <include android:id="@+id/waist_assessment" layout="@layout/card_waist_assessment" />
+    <LinearLayout android:id="@+id/metrics_container" style="@style/GrowthScreen" />
+    <TextView android:id="@+id/trends_title" style="@style/GrowthText.Section" android:textSize="20sp"
+        android:text="روند سنجش‌های همین فرد" android:visibility="gone" />
+    <LinearLayout android:id="@+id/trends_container" style="@style/GrowthScreen" />
+    <TextView android:id="@+id/trend_empty_notice" style="@style/GrowthText.Muted"
+        android:visibility="gone" android:layout_marginBottom="12dp"
+        android:text="برای نمایش روند، حداقل یک سنجش دیگر ثبت کنید." />
+    <TextView android:id="@+id/percentile_notice" style="@style/GrowthText.Muted"
+        android:text="صدک، رتبهٔ سلامت نیست؛ بالاتر بودن همیشه بهتر نیست. این مقایسه با مرجع رشد است، نه با آمار همهٔ کودکان امروز." />
+    <com.google.android.material.card.MaterialCardView style="@style/GrowthCard" app:cardBackgroundColor="@color/growth_explanation">
+        <LinearLayout style="@style/GrowthCardBody">
+            <TextView style="@style/GrowthText.Section" android:textSize="16sp" android:text="توضیح و گام بعدی" />
+            <LinearLayout android:id="@+id/notes_container" style="@style/GrowthScreen" />
+            <TextView android:id="@+id/age_reference" style="@style/GrowthText.Muted" android:textSize="11sp" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+    <com.google.android.material.button.MaterialButton android:id="@+id/save_button" style="@style/GrowthButton" android:text="ثبت در سوابق دستگاه" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/follow_up_button" style="@style/GrowthButton" android:text="سنجش جدید برای همین فرد" android:visibility="gone" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/profile_button" style="@style/GrowthButton.Outlined" android:text="بازگشت به پرونده و سوابق" android:visibility="gone" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/share_button" style="@style/GrowthButton.Outlined" android:text="اشتراک‌گذاری متن گزارش" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/edit_button" style="@style/GrowthButton.Outlined" android:text="بازگشت و ویرایش اطلاعات" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/fresh_button" style="@style/GrowthButton.Outlined" android:text="ارزیابی تازه" />
+</LinearLayout>

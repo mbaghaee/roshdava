@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" style="@style/GrowthCard"
+    android:visibility="gone" tools:visibility="visible">
+    <LinearLayout style="@style/GrowthCardBody">
+        <TextView android:id="@+id/waist_card_title" style="@style/GrowthText.Section" android:text="ارزیابی دور کمر و چربی شکمی" />
+        <TextView android:id="@+id/waist_value" style="@style/GrowthText.Muted" android:textSize="13sp"
+            tools:text="دور کمر: ۹۲ سانتی‌متر · قد: ۱۷۰ سانتی‌متر" />
+        <TextView android:id="@+id/ratio_title" style="@style/GrowthText.Muted" android:text="جایگاه نسبت دور کمر به قد" />
+        <ir.mbaghaee.bmi.WaistRatioGaugeView android:id="@+id/ratio_gauge"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:minHeight="@dimen/waist_gauge_height" android:saveEnabled="false" />
+        <TextView android:id="@+id/waist_status" style="@style/GrowthText.Section" android:textSize="18sp"
+            android:layout_width="wrap_content" tools:text="چربی مرکزی افزایش‌یافته" />
+        <TextView android:id="@+id/waist_detail" style="@style/GrowthText.Muted" android:textSize="13sp" />
+        <TextView android:id="@+id/waist_comparison" style="@style/GrowthText" android:textSize="13sp"
+            android:layout_marginBottom="12dp" />
+
+        <com.google.android.material.button.MaterialButton android:id="@+id/guide_button"
+            style="@style/GrowthButton.Outlined" android:text="روش اندازه‌گیری دور کمر" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/reference_button"
+            style="@style/GrowthButton.Outlined" android:text="منابع و محدودیت‌های تفسیر" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" style="@style/GrowthCard"
+    android:visibility="gone" tools:visibility="visible">
+    <LinearLayout style="@style/GrowthCardBody">
+        <TextView style="@style/GrowthText.Section" android:text="وزن‌گیری همین بارداری" />
+        <TextView android:id="@+id/gestation_label" style="@style/GrowthText.Section" android:textColor="@color/growth_teal"
+            tools:text="۲۰ هفته و ۳ روز · تک‌قلویی" />
+        <TextView android:id="@+id/baseline_label" style="@style/GrowthText.Muted" android:textSize="13sp"
+            tools:text="وزن پیش از بارداری: ۶۰ · وزن این نوبت: ۶۵ کیلوگرم" />
+        <TextView android:id="@+id/gain_value" style="@style/GrowthText.Title" android:textSize="30sp"
+            tools:text="+۵ کیلوگرم" />
+        <TextView android:id="@+id/status_label" style="@style/GrowthText.Section" android:textSize="18sp"
+            android:layout_width="wrap_content" tools:text="در بازهٔ برآوردی این هفته" />
+        <TextView android:id="@+id/higher_order_caution" style="@style/GrowthText" android:textSize="13sp"
+            android:textStyle="bold" android:textColor="#735215" android:background="#FFF7DF"
+            android:padding="12dp" android:layout_marginBottom="10dp" android:visibility="gone"
+            tools:visibility="visible" tools:text="راهنمای حدودی با شواهد محدود؛ تعیین هدف نهایی باید به تیم مراقبت بارداری واگذار شود." />
+        <TextView android:id="@+id/expected_label" style="@style/GrowthText" android:textSize="14sp" android:layout_marginBottom="8dp" />
+        <ir.mbaghaee.bmi.PregnancyGainGaugeView android:id="@+id/gain_gauge" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:minHeight="@dimen/assessment_gauge_height" android:saveEnabled="false" />
+        <TextView android:id="@+id/total_goal_label" style="@style/GrowthText" android:layout_marginBottom="10dp" />
+        <TextView android:id="@+id/pre_bmi_category" style="@style/GrowthText.Muted" android:textSize="13sp" />
+        <TextView android:id="@+id/detail_label" style="@style/GrowthText.Muted" android:textSize="13sp" />
+        <include android:id="@+id/pregnancy_chart" layout="@layout/view_growth_chart" />
+        <TextView android:id="@+id/band_method_notice" style="@style/GrowthText.Muted" android:textSize="11sp"
+            android:text="ناحیهٔ رنگی، راهنمای تقریبی از هفتهٔ ۱۳ تا ۴۰ است؛ منحنی صدکی یا تشخیص قطعی نیست. هدف شخصی با ماما یا پزشک تعیین شود." />
+        <com.google.android.material.button.MaterialButton android:id="@+id/reference_button"
+            style="@style/GrowthButton.Outlined" android:text="مبنای محاسبه و منابع بارداری" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

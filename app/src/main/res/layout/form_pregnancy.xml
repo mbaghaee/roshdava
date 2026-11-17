@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:tools="http://schemas.android.com/tools"
+    style="@style/GrowthScreen" android:visibility="gone" tools:visibility="visible"
+    android:paddingTop="10dp">
+    <TextView style="@style/GrowthText.Section" android:text="اطلاعات همین بارداری" />
+    <com.google.android.material.textfield.TextInputLayout style="@style/GrowthField" android:hint="وزن پیش از بارداری · کیلوگرم">
+        <com.google.android.material.textfield.TextInputEditText android:id="@+id/pre_weight_input"
+            style="@style/GrowthInput" android:inputType="numberDecimal" android:textDirection="ltr" />
+    </com.google.android.material.textfield.TextInputLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:baselineAligned="false">
+        <com.google.android.material.textfield.TextInputLayout style="@style/GrowthField"
+            android:layout_width="0dp" android:layout_weight="1" android:layout_marginEnd="6dp" android:hint="هفتهٔ کامل · ۱ تا ۴۲">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/week_input"
+                style="@style/GrowthInput" android:inputType="number" android:textDirection="ltr" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.textfield.TextInputLayout style="@style/GrowthField"
+            android:layout_width="0dp" android:layout_weight="1" android:layout_marginStart="6dp" android:hint="روز اضافه · ۰ تا ۶">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/day_input"
+                style="@style/GrowthInput" android:inputType="number" android:textDirection="ltr" android:text="0" />
+        </com.google.android.material.textfield.TextInputLayout>
+    </LinearLayout>
+    <TextView style="@style/GrowthText.Muted" android:text="مثلاً ۲۰ هفته و ۳ روز؛ بر اساس سن بارداری تأییدشده در مراقبت بارداری." />
+    <TextView style="@style/GrowthText.Muted" android:text="تعداد جنین" />
+    <com.google.android.material.button.MaterialButtonToggleGroup android:id="@+id/plurality_group"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:saveEnabled="false" app:singleSelection="true" app:selectionRequired="true">
+        <com.google.android.material.button.MaterialButton android:id="@+id/single_button"
+            style="@style/GrowthNavigationButton" android:text="تک‌قلو" android:saveEnabled="false" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/twin_button"
+            style="@style/GrowthNavigationButton" android:text="دوقلو" android:saveEnabled="false" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/other_button"
+            style="@style/GrowthNavigationButton" android:text="بیشتر / نامشخص" android:saveEnabled="false" />
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+    <com.google.android.material.textfield.TextInputLayout android:id="@+id/fetus_count_box"
+        style="@style/GrowthField" android:hint="تعداد جنین · برای چندقلویی" android:visibility="gone" tools:visibility="visible">
+        <com.google.android.material.textfield.TextInputEditText android:id="@+id/fetus_count_input"
+            style="@style/GrowthInput" android:inputType="number" android:textDirection="ltr" />
+    </com.google.android.material.textfield.TextInputLayout>
+    <TextView android:id="@+id/higher_order_notice" style="@style/GrowthText.Muted" android:textSize="12sp"
+        android:visibility="gone" tools:visibility="visible"
+        android:text="اگر تعداد مشخص نیست خالی بگذارید. برای ۳ تا ۵ جنین فقط راهنمای حدودی افزایش وزن کل با شواهد محدود نمایش داده می‌شود؛ تعیین هدف نهایی باید به تیم مراقبت بارداری واگذار شود." />
+    <TextView style="@style/GrowthText.Muted" android:layout_marginTop="10dp"
+        android:text="هدف وزن‌گیری از BMI پیش از بارداری محاسبه می‌شود. برای چندقلویی، هدف هفتگی اختصاصی لازم است." />
+</LinearLayout>

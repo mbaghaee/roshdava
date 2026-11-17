@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" style="@style/GrowthScreen">
+    <TextView style="@style/GrowthText.Title" android:text="پشتیبان‌گیری و بازیابی" />
+    <com.google.android.material.card.MaterialCardView style="@style/GrowthCard">
+        <LinearLayout style="@style/GrowthCardBody">
+            <TextView android:id="@+id/backup_summary" style="@style/GrowthText.Section"
+                android:textSize="18sp" android:textColor="@color/growth_teal" />
+            <TextView style="@style/GrowthText" android:layout_marginBottom="12dp"
+                android:text="پشتیبان شامل پرونده‌ها، سنجش‌ها، اطلاعات نمودارها و فرم نیمه‌تمام فعلی است. محل فایل را خودت انتخاب می‌کنی." />
+            <TextView style="@style/GrowthText.Muted"
+                android:text="فایل شامل اطلاعات فردی و سلامت است و رمزگذاری نشده؛ آن را در محل مطمئن نگه دار." />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+    <com.google.android.material.button.MaterialButton android:id="@+id/export_button"
+        style="@style/GrowthButton" android:text="ذخیرهٔ فایل پشتیبان" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/import_button"
+        style="@style/GrowthButton.Outlined" android:text="بازیابی از فایل پشتیبان" />
+    <TextView android:id="@+id/busy_label" style="@style/GrowthText" android:textColor="@color/growth_teal"
+        android:text="در حال پردازش فایل…" android:visibility="gone" />
+    <TextView style="@style/GrowthText.Muted" android:textSize="13sp" android:layout_marginTop="12dp"
+        android:text="بازیابی، سنجش‌های جدید را به اطلاعات فعلی اضافه می‌کند. موارد تکراری رد می‌شوند؛ فرم جاری فقط با انتخاب جداگانهٔ تو جایگزین می‌شود." />
+</LinearLayout>

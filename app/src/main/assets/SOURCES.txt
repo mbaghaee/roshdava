@@ -1,0 +1,13 @@
+WHO Child Growth Standards 2006 daily LMS and weight-for-length/height:
+https://github.com/WorldHealthOrganization/anthro/tree/master/data-raw/growthstandards
+WHO Growth Reference 2007 monthly expanded LMS (boys and girls):
+https://www.who.int/tools/growth-reference-data-for-5to19-years/indicators/bmi-for-age
+https://www.who.int/tools/growth-reference-data-for-5to19-years/indicators/height-for-age
+LMS and tail adjustment:
+https://cdn.who.int/media/docs/default-source/child-growth/growth-reference-5-19-years/computation.pdf
+Adult cutoffs:
+https://www.who.int/news-room/fact-sheets/detail/obesity-and-overweight
+Downloaded 2026-11-16. Reference data only; independently implemented calculation code.
+This application is not a WHO product or a substitute for clinical assessment.
+
+Transition: the 60-month LMS point is the official final daily 2006 row (1826 days), joined to month 61 in 2007; LMS parameters interpolated in between.

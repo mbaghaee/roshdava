@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" style="@style/GrowthCard">
+    <LinearLayout style="@style/GrowthCardBody">
+        <TextView android:id="@+id/metric_title" style="@style/GrowthText.Muted" tools:text="قد نسبت به سن" />
+        <TextView android:id="@+id/metric_status" style="@style/GrowthText.Section"
+            android:layout_width="wrap_content" android:textSize="20sp" tools:text="در محدوده مرجع (طبیعی)" />
+        <TextView android:id="@+id/percentile_summary" style="@style/GrowthText"
+            android:textSize="15sp" android:layout_marginBottom="8dp" tools:text="قد این کودک از حدود ۵۰٪ کودکان مرجع بیشتر است." />
+        <TextView android:id="@+id/metric_detail" style="@style/GrowthText.Muted" android:textSize="13sp" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/z_toggle"
+            style="@style/GrowthButton.Outlined" android:text="توضیح نمرهٔ استاندارد (Z)" />
+        <TextView android:id="@+id/z_explanation" style="@style/GrowthText.Muted" android:visibility="gone" />
+        <include android:id="@+id/reference_chart" layout="@layout/view_growth_chart" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

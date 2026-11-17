@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="growth_ink">#153441</color>
+    <color name="growth_teal">#007470</color>
+    <color name="growth_muted">#5D737F</color>
+    <color name="growth_background">#F4F7F8</color>
+    <color name="growth_border">#E2E9EC</color>
+    <color name="growth_hero">#13414C</color>
+    <color name="growth_hero_soft">#D1E6E8</color>
+    <color name="growth_hero_accent">#99DDD3</color>
+    <color name="growth_explanation">#EBF2F4</color>
+    <color name="growth_normal_background">#E1F2E8</color>
+    <color name="growth_normal_text">#1B6C4B</color>
+    <color name="growth_point">#2C4BAC</color>
+    <color name="growth_control_border">#B7CBD0</color>
+    <color name="growth_chart_middle_line">#007470</color>
+    <color name="growth_chart_inner_line">#4E806E</color>
+    <color name="growth_chart_side_line">#B48026</color>
+    <color name="growth_chart_outer_line">#BA5E56</color>
+    <color name="growth_chart_middle_fill">#18007470</color>
+    <color name="growth_chart_side_fill">#23DAA520</color>
+    <color name="growth_chart_outer_fill">#16BA5E56</color>
+    <color name="growth_chart_neutral_fill">#18657480</color>
+    <color name="waist_gauge_normal">#368A73</color>
+    <color name="waist_gauge_increased">#D39A35</color>
+    <color name="waist_gauge_high">#C96961</color>
+    <color name="waist_gauge_neutral">#C5D1D5</color>
+    <color name="waist_gauge_increased_ink">#946415</color>
+    <color name="waist_gauge_high_ink">#A0443E</color>
+    <color name="bmi_gauge_underweight">#EDB171</color>
+    <color name="bmi_gauge_overweight">#D78D48</color>
+</resources>

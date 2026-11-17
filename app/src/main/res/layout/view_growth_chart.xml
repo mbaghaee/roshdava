@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" style="@style/GrowthScreen">
+    <TextView android:id="@+id/chart_title" style="@style/GrowthText.Section"
+        android:text="جایگاه کودک روی نمودار مرجع" android:layout_marginBottom="0dp" />
+    <TextView android:id="@+id/single_point_notice" style="@style/GrowthText.Muted"
+        android:visibility="gone" android:layout_marginTop="8dp"
+        android:text="برای نمایش روند، حداقل یک سنجش دیگر ثبت کنید." />
+    <ir.mbaghaee.bmi.ReferenceChartView android:id="@+id/chart"
+        android:layout_width="match_parent" android:layout_height="280dp" android:saveEnabled="false" />
+    <TextView android:id="@+id/curve_legend" style="@style/GrowthText.Muted" android:textSize="11sp"
+        android:text="عدد کنار هر خط، صدک مرجع است. خط سبز: میانه (۵۰). نقطهٔ پررنگ: این نوبت؛ نقاط دیگر: سنجش‌های همین پرونده." />
+    <TextView android:id="@+id/band_legend" style="@style/GrowthText.Muted" android:textSize="11sp"
+        android:text="رنگ زمینه بر اساس تفسیر همین شاخص است؛ عدد کنار هر خط، صدک مرجع را نشان می‌دهد. جزئیات در نتیجهٔ کارت آمده است." />
+    <TextView android:id="@+id/coordinates" style="@style/GrowthText" android:textSize="13sp"
+        android:textColor="@color/growth_point" android:visibility="gone"
+        tools:text="تاریخ سنجش: ۱۴۰۵/۰۸/۲۵" />
+    <TextView android:id="@+id/point_count" style="@style/GrowthText.Muted" android:textSize="11sp"
+        tools:text="۳ نقطه؛ برای دیدن مختصات، نقطه را لمس کنید." />
+    <com.google.android.material.button.MaterialButton android:id="@+id/zoom_button"
+        style="@style/GrowthButton.Outlined" android:text="نمای کل مرجع" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/fullscreen_button"
+        style="@style/GrowthButton.Outlined" android:text="نمودار تمام‌صفحه و جدول سنجش‌ها" />
+</LinearLayout>

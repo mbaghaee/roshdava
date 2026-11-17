@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="assessment_gauge_height">136dp</dimen>
+    <dimen name="waist_gauge_height">@dimen/assessment_gauge_height</dimen>
+    <dimen name="bmi_gauge_height">@dimen/assessment_gauge_height</dimen>
+</resources>

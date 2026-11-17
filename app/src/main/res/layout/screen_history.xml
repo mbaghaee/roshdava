@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" style="@style/GrowthScreen">
+    <TextView android:id="@+id/history_title" style="@style/GrowthText.Title" android:text="پرونده‌ها و سوابق سنجش" />
+    <TextView android:id="@+id/profile_name" style="@style/GrowthText.Section"
+        android:textColor="@color/growth_teal" android:visibility="gone" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/follow_up_button"
+        style="@style/GrowthButton" android:text="سنجش جدید برای همین فرد" android:visibility="gone" />
+    <com.google.android.material.card.MaterialCardView android:id="@+id/empty_card" style="@style/GrowthCard" android:visibility="gone">
+        <LinearLayout style="@style/GrowthCardBody">
+            <TextView style="@style/GrowthText.Section" android:text="هنوز ارزیابی ذخیره نشده" />
+            <TextView style="@style/GrowthText" android:text="پس از محاسبه، ارزیابی را در سوابق ثبت کنید." />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+    <LinearLayout android:id="@+id/records_container" style="@style/GrowthScreen" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/new_pregnancy_button"
+        style="@style/GrowthButton.Outlined" android:text="شروع بارداری بعدی" android:visibility="gone"
+        android:contentDescription="آماده‌سازی فرم برای بارداری دیگری در همین پرونده" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/all_profiles_button"
+        style="@style/GrowthButton.Outlined" android:text="همهٔ پرونده‌ها" android:visibility="gone" />
+</LinearLayout>

@@ -26,6 +26,7 @@
     </com.google.android.material.card.MaterialCardView>
     <include android:id="@+id/pregnancy_assessment" layout="@layout/card_pregnancy_assessment" />
     <include android:id="@+id/waist_assessment" layout="@layout/card_waist_assessment" />
+    <include android:id="@+id/nutrition_card" layout="@layout/card_nutrition" />
     <LinearLayout android:id="@+id/metrics_container" style="@style/GrowthScreen" />
     <TextView android:id="@+id/trends_title" style="@style/GrowthText.Section" android:textSize="20sp"
         android:text="روند سنجش‌های همین فرد" android:visibility="gone" />

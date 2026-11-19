@@ -9,6 +9,21 @@ object BmiGaugeRanges {
  fun band(value:Double,adult:Boolean,young:Boolean):Int=if(adult)when{value<18.5->0;value<25->1;value<30->2;else->3} else when{
   value< -2->0;value<=1->1;young&&value<=2->2;young&&value<=3->3;young->4;value<=2->2;else->3
  }
+ fun adultNumber(value:Double,minDecimals:Int=1):String {
+  fun category(v:Double)=when{
+   v<18.5->0
+   v<25->1
+   v<30->2
+   v<35->3
+   v<40->4
+   else->5
+  }
+  for(digits in minDecimals..8){
+   val text=String.format(Locale.US,"%.${digits}f",value)
+   if(category(text.toDouble())==category(value))return text
+  }
+  return value.toString()
+ }
  fun number(value:Double,adult:Boolean,young:Boolean):String {
   for(digits in 2..8){
    val text=String.format(Locale.US,"%.${digits}f",value)

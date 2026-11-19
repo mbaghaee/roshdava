@@ -24,7 +24,7 @@ class ChartExplorerActivity:AppCompatActivity(){
  private var fromDay:Int?=null
  private var selected:PlotPoint?=null
  private var updating=false
- private var recordsByDay=emptyMap<Int,List<Pair<JSONObject,SavedAssessment>>>()
+ private var recordsById=emptyMap<Long,Pair<JSONObject,SavedAssessment>>()
  private val regular by lazy{ResourcesCompat.getFont(this,R.font.vazirmatn_regular)}
  private val bold by lazy{ResourcesCompat.getFont(this,R.font.vazirmatn_bold)}
  override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState)
@@ -33,7 +33,9 @@ class ChartExplorerActivity:AppCompatActivity(){
    require(name.matches(Regex("chart-[a-f0-9-]+[.]json")))
    sourceFile=File(cacheDir,name);payload=JSONObject(sourceFile!!.readText());base=ChartExplorerData.decode(payload.getJSONObject("plot"))
    val records=payload.getJSONArray("records")
-   recordsByDay=(0 until records.length()).mapNotNull{i->val r=records.getJSONObject(i);SavedAssessment.decode(r)?.let{r to it}}.groupBy{it.second.patient.days}
+   recordsById=HistoryTimeline.records(records).mapNotNull{record->
+    SavedAssessment.decode(record)?.let{ChartExplorerData.visitId(record) to (record to it)}
+   }.toMap()
   }catch(_:Exception){Toast.makeText(this,"دادهٔ نمودار در دسترس نیست؛ آن را از ارزیابی دوباره باز کنید.",Toast.LENGTH_LONG).show();finish();return}
   ui=ActivityChartExplorerBinding.inflate(layoutInflater);setContentView(ui.root)
   ViewCompat.setOnApplyWindowInsetsListener(ui.root){v,insets->val b=insets.getInsets(WindowInsetsCompat.Type.systemBars());v.setPadding(b.left,b.top,b.right,b.bottom);insets}
@@ -68,7 +70,8 @@ class ChartExplorerActivity:AppCompatActivity(){
   installGestures();fonts(ui.root);redraw()
  }
  private fun fonts(v:View){if(v is TextView)v.typeface=if(v.typeface?.isBold==true)bold else regular;if(v is ViewGroup)for(i in 0 until v.childCount)fonts(v.getChildAt(i))}
- private fun info(p:PlotPoint)=ui.chart.describePoint(p)+"\nتاریخ سنجش: "+SolarDate.fromUtc(payload.getLong("birth")+p.day*86400000L).display()
+ private fun chartAnchor()=if(payload.has("chartAnchor"))payload.getLong("chartAnchor") else payload.getLong("birth")
+ private fun info(p:PlotPoint)=ui.chart.describePoint(p)+"\nتاریخ سنجش: "+SolarDate.fromUtc(chartAnchor()+p.day*AssessmentAge.DAY_MS).display()
  private fun setRange(low:Double,high:Double){
   val minSpan=max((base.xMax-base.xMin)/1000,1e-5);val span=(high-low).coerceIn(minSpan,base.xMax-base.xMin)
   val lo=low.coerceIn(base.xMin,base.xMax-span);updating=true
@@ -88,16 +91,17 @@ class ChartExplorerActivity:AppCompatActivity(){
   ui.visitsContainer.removeAllViews()
   val range=ui.rangeSlider.values
   val points=ChartViewport.points(base).filter{it.x>=range[0]&&it.x<=range[1]&&(fromDay==null||it.day>=fromDay!!)}.sortedBy{it.day}
-  val shown=if(only==null)points else points.filter{it==only}
+  val shown=if(only==null)points else points.filter{it.x==only.x&&it.y==only.y&&it.day==only.day}
   for(point in shown){
-   val matches=recordsByDay[point.day].orEmpty()
-   if(matches.isEmpty()){
-    val row=ItemChartVisitBinding.inflate(layoutInflater,ui.visitsContainer,true);row.values.text=info(point);row.openButton.visibility=View.GONE
-   }else for((record,saved) in matches){
-    val row=ItemChartVisitBinding.inflate(layoutInflater,ui.visitsContainer,true)
-    row.values.text=info(point)+SolarDate.persian("\nوزن نوبت: ${saved.patient.weight} کیلوگرم · قد: ${saved.patient.height} سانتی‌متر")+
-     if(matches.size>1)"\nدر این روز چند سنجش ثبت شده؛ نوبت موردنظر را انتخاب کنید." else ""
-    val current=record.optBoolean("explorerCurrent")
+   val row=ItemChartVisitBinding.inflate(layoutInflater,ui.visitsContainer,true)
+   val match=point.visitId?.let(recordsById::get)
+   row.values.text=info(point)
+   if(match==null){
+    row.openButton.visibility=View.GONE
+   }else{
+    val (record,saved)=match
+    row.values.append(SolarDate.persian("\nوزن نوبت: ${saved.patient.weight} کیلوگرم · قد: ${saved.patient.height} سانتی‌متر"))
+    val current=point.visitId==ChartExplorerData.CURRENT_VISIT_ID
     row.openButton.text=if(current)"بازگشت به ارزیابی جاری" else "نمایش ارزیابی این سنجش"
     row.openButton.setOnClickListener{if(!current)setResult(RESULT_OK,Intent().putExtra("record",record.toString()));finish()}
    }

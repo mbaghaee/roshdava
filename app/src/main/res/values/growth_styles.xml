@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <style name="NutritionCalorieWheel">
+        <item name="android:textColorPrimary">@color/growth_ink</item>
+        <item name="android:editTextColor">@color/growth_ink</item>
+    </style>
     <style name="GrowthScreen">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>

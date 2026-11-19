@@ -28,6 +28,20 @@ class BackupAndPointTest {
  @Test fun unrelatedProfilesAreNotMergedByName(){val result=BackupCodec.merge(JSONArray().put(record()),JSONArray().put(record(profile="other")));assertEquals(2,BackupCodec.profileCount(result.records));assertEquals(1,result.added)}
  @Test fun emptyBackupIsValid(){val data=BackupCodec.decode(BackupCodec.encode(JSONArray(),JSONObject()));assertEquals(0,data.records.length())}
  @Test fun legacyReportSurvivesBackup(){val old=JSONObject().put("id",1).put("patientId","old").put("name","نمونه").put("report","متن نسخه قدیمی");val data=BackupCodec.decode(BackupCodec.encode(JSONArray().put(old),JSONObject()));assertEquals("متن نسخه قدیمی",data.records.getJSONObject(0).getString("report"))}
+ @Test fun backupRetriesWithAVisitSavedDuringTheMerge(){
+  var current=JSONArray().put(record(1)).toString()
+  var attempts=0
+  val (restored,draftRestored)=BackupCodec.mergeLatest(JSONArray().put(record(2,weight=21.0)),{current}){snapshot,plan->
+   if(attempts++==0)current=JSONArray(current).put(record(3,weight=22.0)).toString()
+   if(current!=snapshot)null else {
+    current=plan.records.toString()
+    false
+   }
+  }
+  assertEquals(2,attempts)
+  assertEquals(listOf(1L,3L,2L),HistoryTimeline.records(restored.records).map{it.getLong("id")})
+  assertFalse(draftRestored)
+ }
  @Test fun touchSelectsTheOldPointAndReportsAxisValues(){
   val instrumentation=InstrumentationRegistry.getInstrumentation()
   instrumentation.runOnMainSync{
@@ -47,7 +61,7 @@ class BackupAndPointTest {
    assertFalse(chart.onTouchEvent(outside));outside.recycle();assertTrue(dismissed)
   }
  }
- @Test fun percentileBackgroundHasBothYellowSidesAndRedOuterRegions(){
+ @Test fun percentileBackgroundUsesNeutralShadesOnBothSides(){
   InstrumentationRegistry.getInstrumentation().runOnMainSync{
    val context=InstrumentationRegistry.getInstrumentation().targetContext
    val curves=(-3..3).map{z->ReferenceCurve(z,listOf(PlotPoint(0.0,z+4.0),PlotPoint(10.0,z+4.0)))}
@@ -58,9 +72,14 @@ class BackupAndPointTest {
    val bitmap=Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);chart.draw(Canvas(bitmap))
    val left=48*density;val right=width-44*density;val top=38*density;val bottom=height-48*density
    fun pixel(value:Double)=bitmap.getPixel((left+(right-left)*.25f).toInt(),(bottom-(bottom-top)*(value-.5)/7.0).toInt())
-   for(value in listOf(.75,7.25)){val color=pixel(value);assertTrue(android.graphics.Color.red(color)>android.graphics.Color.green(color));assertTrue(android.graphics.Color.green(color)<120)}
-   for(value in listOf(1.5,6.5)){val color=pixel(value);assertTrue(android.graphics.Color.red(color)>android.graphics.Color.green(color));assertTrue(android.graphics.Color.green(color)>120)}
-   val middle=pixel(3.5);assertTrue(android.graphics.Color.green(middle)>android.graphics.Color.red(middle))
+   val middle=pixel(3.5);val outer=pixel(.75);val shoulder=pixel(1.5)
+   for(color in listOf(middle,outer,shoulder)){
+    assertTrue(kotlin.math.abs(android.graphics.Color.red(color)-android.graphics.Color.green(color))<=12)
+    assertTrue(kotlin.math.abs(android.graphics.Color.green(color)-android.graphics.Color.blue(color))<=12)
+   }
+   assertEquals(outer,pixel(7.25));assertEquals(shoulder,pixel(6.5))
+   assertTrue(android.graphics.Color.red(middle)>android.graphics.Color.red(shoulder))
+   assertTrue(android.graphics.Color.red(shoulder)>android.graphics.Color.red(outer))
    bitmap.recycle()
   }
  }

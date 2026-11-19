@@ -5,6 +5,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.test.core.app.ActivityScenario
+import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.assertion.ViewAssertions.matches
+import androidx.test.espresso.matcher.ViewMatchers.withId
+import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.json.JSONArray
@@ -42,6 +47,27 @@ class AssessmentScreenTest {
  private fun assertSelected(activity:MainActivity,title:String){
   for(label in listOf("فرم ارزیابی","سوابق سنجش","پشتیبان"))assertEquals(label,label==title,text(activity,label).isSelected)
  }
+ @Test fun adolescentPregnancyIsRecordedAndUsesIndividualCare(){
+  val birth=946684800000L
+  val form=JSONObject().put("name","نمونه").put("sex",2).put("selected",true)
+   .put("birth",birth).put("visit",birth+6200L*86400000).put("weight","61").put("height","165")
+   .put("preg",true).put("prePregnancyWeight","60").put("pregnancyWeek","13")
+   .put("pregnancyDay","6").put("pregnancyPlurality",1)
+  check(prefs.edit().putString("draft",form.toString()).commit())
+  ActivityScenario.launch(MainActivity::class.java).use{scenario->
+   scenario.onActivity{
+    assertTrue(it.findViewById<View>(R.id.pregnant_checkbox).isShown)
+    text(it,"مشاهدهٔ ارزیابی رشد  ←").performClick()
+    assertTrue(it.findViewById<View>(R.id.pregnancy_assessment).isShown)
+    assertEquals(PregnancyAssessment.INDIVIDUAL,it.findViewById<TextView>(R.id.status_label).text.toString())
+    assertFalse(it.findViewById<View>(R.id.nutrition_toggle).isShown)
+    text(it,"ثبت در سوابق دستگاه").performClick()
+   }
+  }
+  val saved=SavedAssessment.decode(JSONArray(prefs.getString("records","[]")).getJSONObject(0))!!
+  assertTrue(saved.patient.pregnant)
+  assertNull(saved.assessment.pregnancy!!.weekLow)
+ }
  @Test fun unsavedResultAndChartsSurviveRecreationWithoutSaving(){
   ActivityScenario.launch(MainActivity::class.java).use{scenario->
    scenario.onActivity{text(it,"مشاهدهٔ ارزیابی رشد  ←").performClick();assertSelected(it,"فرم ارزیابی")}
@@ -70,6 +96,107 @@ class AssessmentScreenTest {
    scenario.onActivity{assertSelected(it,"سوابق سنجش");text(it,"پشتیبان").performClick();assertSelected(it,"پشتیبان")}
    scenario.recreate()
    scenario.onActivity{assertSelected(it,"پشتیبان");text(it,"فرم ارزیابی").performClick();assertSelected(it,"فرم ارزیابی")}
+  }
+ }
+ @Test fun approximateAdultAgeSurvivesSaveBackupAndFollowUpWithoutBirthDate(){
+  val firstVisit=1761955200000L
+  val form=JSONObject().put("name","نمونه سن تقریبی").put("sex",1).put("visit",firstVisit)
+   .put("weight","78").put("height","170")
+  check(prefs.edit().putString("draft",form.toString()).commit())
+  ActivityScenario.launch(MainActivity::class.java).use{scenario->
+   scenario.onActivity{
+    it.findViewById<View>(R.id.approximate_age_checkbox).performClick()
+    val age=it.findViewById<android.widget.EditText>(R.id.approximate_age_input)
+    assertTrue(age.isShown)
+    assertFalse(it.findViewById<View>(R.id.birth_button).isShown)
+    age.setText("۱۸")
+    text(it,"مشاهدهٔ ارزیابی رشد  ←").performClick()
+    assertTrue(age.isShown)
+    assertNotNull(it.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.approximate_age_box).error)
+    age.setText("۵۰")
+    assertTrue(it.findViewById<View>(R.id.waist_input).isShown)
+    text(it,"مشاهدهٔ ارزیابی رشد  ←").performClick()
+    assertTrue(it.findViewById<TextView>(R.id.age_sex).text.contains("حدود ۵۰ سال"))
+   }
+   scenario.recreate()
+   scenario.onActivity{
+    assertTrue(it.findViewById<TextView>(R.id.age_sex).text.contains("حدود ۵۰ سال"))
+    text(it,"ثبت در سوابق دستگاه").performClick()
+    text(it,"سوابق سنجش").performClick()
+    text(it,"سنجش جدید برای همین فرد").performClick()
+    assertFalse(it.findViewById<View>(R.id.birth_button).isShown)
+    assertEquals("50",it.findViewById<android.widget.EditText>(R.id.approximate_age_input).text.toString())
+   }
+  }
+  val records=JSONArray(prefs.getString("records","[]"))
+  val draft=JSONObject(prefs.getString("draft","{}")!!)
+  val saved=records.getJSONObject(0)
+  assertFalse(saved.has("birthUtc"))
+  assertFalse(draft.has("birth"))
+  assertTrue(saved.getString("report").contains("حدود ۵۰ سال"))
+  assertFalse(saved.getString("report").contains("تولد:"))
+  val restored=BackupCodec.decode(BackupCodec.encode(records,draft))
+  assertNull(SavedAssessment.decode(restored.records.getJSONObject(0))!!.birthUtc)
+  assertEquals(50,AssessmentAge.approximateYears(SavedAssessment.decode(saved)!!.patient.days))
+ }
+ @Test fun adultCalorieTargetIsEditableBeforeApplyingAndIndependentOfDetails(){
+  val birth=631152000000L
+  val draft=JSONObject().put("name","نمونه تغذیه").put("sex",1).put("selected",true)
+   .put("birth",birth).put("visit",birth+12784L*86400000).put("weight","117").put("height","180")
+  check(prefs.edit().putString("draft",draft.toString()).commit())
+  ActivityScenario.launch(MainActivity::class.java).use{scenario->
+   scenario.onActivity{
+    text(it,"مشاهدهٔ ارزیابی رشد  ←").performClick()
+    it.findViewById<View>(R.id.nutrition_toggle).performClick()
+    val target=it.findViewById<android.widget.EditText>(R.id.target_calories)
+    assertTrue(target.isShown)
+    assertEquals("",target.text.toString())
+    assertFalse(it.findViewById<View>(R.id.plan_inputs).isShown)
+    assertFalse(it.findViewById<View>(R.id.apply_suggestion).isShown)
+    target.setText("2100")
+    it.findViewById<View>(R.id.activity_select).performClick()
+   }
+   onView(withText("کم‌تحرک · بیشتر روز نشسته")).perform(click())
+   scenario.onActivity{
+    val target=it.findViewById<android.widget.EditText>(R.id.target_calories)
+    val proposal=it.findViewById<TextView>(R.id.suggestion_text)
+    val details=it.findViewById<View>(R.id.plan_inputs)
+    val apply=it.findViewById<View>(R.id.apply_suggestion)
+    assertTrue(proposal.isShown)
+    assertTrue(proposal.text.toString().startsWith("کالری هدف پیشنهادی: ۲۰۵۰ کیلوکالری در روز"))
+    assertTrue(target.isShown)
+    assertEquals("2100",target.text.toString())
+    assertFalse(details.isShown)
+    assertTrue(apply.isShown && apply.isEnabled)
+    assertTrue(it.findViewById<TextView>(R.id.harris_energy).text.contains("با وزن فعلی ثبت‌شده، نه وزن ایده‌آل"))
+    assertTrue(it.findViewById<TextView>(R.id.mifflin_energy).text.contains("مبنای پیشنهاد کالری رژیم"))
+    it.findViewById<View>(R.id.deficit_picker).performClick()
+   }
+   onView(withId(R.id.reduction_target_preview)).check(matches(withText("کالری هدف پس از اعمال: ۲۰۵۰ کیلوکالری در روز")))
+   onView(withText("انتخاب و اعمال")).perform(click())
+   scenario.onActivity{
+    val target=it.findViewById<android.widget.EditText>(R.id.target_calories)
+    val details=it.findViewById<View>(R.id.plan_inputs)
+    val apply=it.findViewById<TextView>(R.id.apply_suggestion)
+    assertEquals("2050",target.text.toString())
+    assertEquals("هدف تنظیم شد",apply.text.toString())
+    assertFalse(apply.isEnabled)
+    assertFalse(details.isShown)
+    val toggle=it.findViewById<View>(R.id.plan_toggle)
+    toggle.performClick()
+    assertTrue(details.isShown)
+    toggle.performClick()
+    assertFalse(details.isShown)
+    assertTrue(target.isShown)
+    assertEquals("2050",target.text.toString())
+   }
+   scenario.recreate()
+   scenario.onActivity{
+    val target=it.findViewById<android.widget.EditText>(R.id.target_calories)
+    assertTrue(target.isShown)
+    assertEquals("2050",target.text.toString())
+    assertFalse(it.findViewById<View>(R.id.plan_inputs).isShown)
+   }
   }
  }
  @Test fun childWaistCardSurvivesRecreationAndHistory(){
@@ -297,6 +424,19 @@ class AssessmentScreenTest {
    val saved=SavedAssessment.decode(records.getJSONObject(0))!!
    assertEquals(119.0,saved.patient.height,0.0)
    assertEquals(21.0,saved.patient.weight,0.0)
+  }
+ }
+ @Test fun deletingAProfileCardRemovesEveryVisitAfterConfirmation(){
+  ActivityScenario.launch(MainActivity::class.java).use{scenario->
+   scenario.onActivity{
+    text(it,"مشاهدهٔ ارزیابی رشد  ←").performClick()
+    text(it,"ثبت در سوابق دستگاه").performClick()
+    text(it,"سوابق سنجش").performClick()
+    it.findViewById<View>(R.id.delete_profile_button).performClick()
+    text(it,"حذف همه").performClick()
+    assertNotNull(text(it,"هنوز ارزیابی ذخیره نشده"))
+   }
+   assertEquals(0,JSONArray(prefs.getString("records","[]")).length())
   }
  }
 }

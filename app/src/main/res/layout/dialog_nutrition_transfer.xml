@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" style="@style/GrowthScreen"
+    android:paddingStart="24dp" android:paddingEnd="24dp">
+    <TextView android:id="@+id/transfer_limit" style="@style/GrowthText.Muted" />
+    <TextView style="@style/GrowthText" android:text="وعدهٔ مقصد" android:labelFor="@+id/destination" />
+    <Spinner android:id="@+id/destination" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:minHeight="48dp" android:layout_marginBottom="8dp" />
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/GrowthField" android:hint="تعداد واحد برای انتقال">
+        <com.google.android.material.textfield.TextInputEditText android:id="@+id/amount"
+            style="@style/GrowthInput" android:maxLength="5" android:inputType="numberDecimal"
+            android:textDirection="ltr" />
+    </com.google.android.material.textfield.TextInputLayout>
+</LinearLayout>

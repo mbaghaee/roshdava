@@ -27,9 +27,9 @@ class ReferenceChartView private constructor(context:Context,initial:ReferencePl
  private val touchSlop=ViewConfiguration.get(context).scaledTouchSlop
  fun describePoint(point:PlotPoint):String {
   fun exact(value:Double,digits:Int=2)=SolarDate.persian((if(digits==3)WaistAssessment.ratioNumber(value) else String.format(Locale.US,"%.${digits}f",value)).trimEnd('0').trimEnd('.'))
-  val age=if(point.day/30.4375>=228)"${if(plot.gestationalWeekAxis)"سن مادر" else "سن"}: ${exact(point.day/365.25)} سال" else "سن دقیق: ${SolarDate.persian(point.day.toString())} روز"
+  val age=if(plot.dateBasedAge)"" else if(point.day/30.4375>=228)"${if(plot.gestationalWeekAxis)"سن مادر" else "سن"}: ${exact(point.day/365.25)} سال" else "سن دقیق: ${SolarDate.persian(point.day.toString())} روز"
   val horizontal=if(plot.gestationalWeekAxis)PregnancyAssessment.weekLabel((point.x*7).roundToInt()) else exact(point.x)
-  return "محور افقی · ${plot.xLabel}: $horizontal\nمحور عمودی · ${plot.yLabel}: ${exact(point.y,plot.yDecimals?:2)}\n$age"
+  return "محور افقی · ${plot.xLabel}: $horizontal\nمحور عمودی · ${plot.yLabel}: ${exact(point.y,plot.yDecimals?:2)}"+if(age.isEmpty())"" else "\n$age"
  }
  override fun onTouchEvent(event:MotionEvent):Boolean {
   when(event.actionMasked){
@@ -54,10 +54,8 @@ class ReferenceChartView private constructor(context:Context,initial:ReferencePl
  private val paint=Paint(Paint.ANTI_ALIAS_FLAG).apply{typeface=ResourcesCompat.getFont(context,R.font.vazirmatn_regular)}
  private fun dp(n:Float)=n*resources.displayMetrics.density
  private val median=context.getColor(R.color.growth_chart_middle_line)
- private val innerLine=context.getColor(R.color.growth_chart_inner_line)
- private val amber=context.getColor(R.color.growth_chart_side_line)
- private val red=context.getColor(R.color.growth_chart_outer_line)
- private fun curveColor(z:Int)=when(abs(z)){0->median;1->innerLine;2->amber;else->red}
+ private val referenceLine=context.getColor(R.color.growth_chart_inner_line)
+ private fun curveColor(z:Int)=if(z==0)median else referenceLine
  init{isClickable=true;isFocusable=true;importantForAccessibility=IMPORTANT_FOR_ACCESSIBILITY_YES;updateDescription()}
  fun setPlot(value:ReferencePlot){xmlPlaceholder=false;plot=value;selectedPoint=value.point;showPointTooltip=false;hitTargets=emptyList();updateDescription();onSelectionCleared?.invoke();invalidate()}
  fun snapshotPlot()=plot

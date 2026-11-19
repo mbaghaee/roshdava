@@ -33,7 +33,8 @@ object Percentiles {
  }
 }
 
-data class PlotPoint(val x:Double,val y:Double,val day:Int=0)
+data class ChartVisit(val id:Long,val patient:Patient)
+data class PlotPoint(val x:Double,val y:Double,val day:Int=0,val visitId:Long?=null)
 data class ReferenceCurve(val z:Int,val points:List<PlotPoint>)
 data class ReferenceEnvelope(val lower:List<PlotPoint>,val upper:List<PlotPoint>)
 enum class BandTone { NORMAL, CAUTION, ALERT, NEUTRAL }
@@ -43,7 +44,7 @@ object ReferenceBands {
  // All WHO reference charts use the same visual percentile bands. Clinical interpretation stays in the cards/BMI gauge.
  private val lowWeight=listOf(ReferenceBand(null,-3,BandTone.ALERT),ReferenceBand(-3,-2,BandTone.CAUTION))
  private val percentileBands=lowWeight+listOf(ReferenceBand(-2,2,BandTone.NORMAL),ReferenceBand(2,3,BandTone.CAUTION),ReferenceBand(3,null,BandTone.ALERT))
- private const val PERCENTILE_LEGEND="سبز: صدک ۲٫۳ تا ۹۷٫۷؛ زرد: صدک ۰٫۱ تا ۲٫۳ و ۹۷٫۷ تا ۹۹٫۹؛ قرمز: پایین‌تر از ۰٫۱ یا بالاتر از ۹۹٫۹. اعداد صدک گرد شده‌اند. زمینه فقط جایگاه صدکی است؛ سبز بودن به‌تنهایی به معنی طبیعی بودن وضعیت نیست. تفسیر را در نتیجهٔ کارت بخوانید."
+ private const val PERCENTILE_LEGEND="سایه‌های خاکستری جایگاه صدکی را نشان می‌دهند. از روشن به تیره: صدک ۲٫۳ تا ۹۷٫۷؛ صدک ۰٫۱ تا ۲٫۳ و ۹۷٫۷ تا ۹۹٫۹؛ پایین‌تر از ۰٫۱ یا بالاتر از ۹۹٫۹. اعداد صدک گرد شده‌اند. تفسیر هر شاخص در کارت نتیجه آمده است."
  fun forIndicator(indicator:String):List<ReferenceBand> = when(indicator){
   "bmi2007","bmianthro","wflanthro","wfhanthro","lenanthro","hfa2007","hcanthro","weianthro"->percentileBands
   else->emptyList()
@@ -52,8 +53,8 @@ object ReferenceBands {
   "bmi2007"->PERCENTILE_LEGEND+" برای BMI سنین ۵ تا ۱۹ سال، Z بالاتر از +۱ اضافه‌وزن و بالاتر از +۲ چاقی است؛ وضعیت و نوار اصلی BMI همین مرزهای بالینی را نشان می‌دهند."
   "bmianthro","wflanthro","wfhanthro","lenanthro","hfa2007","hcanthro"->PERCENTILE_LEGEND
   "weianthro"->PERCENTILE_LEGEND+" در این نمودار، ناحیهٔ بالایی به‌تنهایی به معنی اضافه‌وزن یا چاقی نیست؛ تناسب وزن با قد یا BMI نسبت به سن را بررسی کنید."
-  else->"رنگ زمینه بر اساس تفسیر همین شاخص است؛ عدد کنار هر خط، صدک مرجع را نشان می‌دهد."
+  else->"عدد کنار هر خط، صدک مرجع را نشان می‌دهد."
  }
 }
 data class ReferencePlot(val xLabel:String,val yLabel:String,val xMin:Double,val xMax:Double,
- val curves:List<ReferenceCurve>,val point:PlotPoint,val pointText:String,val history:List<PlotPoint> = emptyList(),val bands:List<ReferenceBand> = emptyList(),val minYPadding:Double=.5,val yDecimals:Int?=null,val envelope:ReferenceEnvelope?=null,val minYValue:Double?=0.0,val gestationalWeekAxis:Boolean=false,val showCurrentPoint:Boolean=true)
+ val curves:List<ReferenceCurve>,val point:PlotPoint,val pointText:String,val history:List<PlotPoint> = emptyList(),val bands:List<ReferenceBand> = emptyList(),val minYPadding:Double=.5,val yDecimals:Int?=null,val envelope:ReferenceEnvelope?=null,val minYValue:Double?=0.0,val gestationalWeekAxis:Boolean=false,val showCurrentPoint:Boolean=true,val dateBasedAge:Boolean=false)

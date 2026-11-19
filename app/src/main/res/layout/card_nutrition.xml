@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" style="@style/GrowthCard">
+    <LinearLayout style="@style/GrowthCardBody">
+        <TextView style="@style/GrowthText.Section" android:text="انرژی و برنامهٔ غذایی" />
+        <TextView android:id="@+id/nutrition_summary" style="@style/GrowthText.Muted" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/nutrition_toggle" style="@style/GrowthButton.Outlined" android:text="تنظیم تغذیه" />
+        <LinearLayout android:id="@+id/nutrition_body" style="@style/GrowthScreen" android:visibility="gone">
+            <TextView android:id="@+id/energy_stage_title" style="@style/GrowthText.Section"
+                android:text="۱. برآورد انرژی" android:visibility="gone" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/activity_select" style="@style/GrowthButton.Outlined" android:text="انتخاب سطح فعالیت" />
+            <TextView android:id="@+id/activity_detail" style="@style/GrowthText.Muted" />
+            <TextView android:id="@+id/clinical_notice" style="@style/GrowthText.Muted"
+                android:text="در دوران شیردهی یا در صورت بیماری، مصرف داروی مؤثر بر تغذیه یا شرایط خاص، برای تعیین کالری و رژیم مشاورهٔ اختصاصی لازم است." />
+            <com.google.android.material.button.MaterialButton android:id="@+id/care_context"
+                style="@style/GrowthButton.Outlined" android:text="شرایط تغذیه" />
+            <TextView android:id="@+id/energy_details" style="@style/GrowthText.Muted"
+                android:accessibilityLiveRegion="polite" />
+            <TextView android:id="@+id/harris_energy" style="@style/GrowthText" android:textSize="16sp" />
+            <TextView android:id="@+id/mifflin_energy" style="@style/GrowthText" android:textSize="16sp"
+                android:layout_marginBottom="12dp" />
+            <LinearLayout android:id="@+id/pregnancy_comparison" style="@style/GrowthScreen" android:visibility="gone">
+                <com.google.android.material.card.MaterialCardView style="@style/GrowthCard.EnergyResult">
+                    <LinearLayout style="@style/GrowthScreen">
+                        <TextView style="@style/GrowthText.EnergyMethod" android:text="DRI 2023"
+                            android:textDirection="ltr" />
+                        <TextView android:id="@+id/pregnancy_dri_energy" style="@style/GrowthText" />
+                        <TextView android:id="@+id/pregnancy_dri_detail" style="@style/GrowthText.Muted"
+                            android:layout_marginBottom="0dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                <com.google.android.material.card.MaterialCardView style="@style/GrowthCard.EnergyResult">
+                    <LinearLayout style="@style/GrowthScreen">
+                        <TextView style="@style/GrowthText.EnergyMethod" android:text="هریس–بندیکت" />
+                        <TextView android:id="@+id/pregnancy_harris_energy" style="@style/GrowthText" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                <com.google.android.material.card.MaterialCardView style="@style/GrowthCard.EnergyResult">
+                    <LinearLayout style="@style/GrowthScreen">
+                        <TextView style="@style/GrowthText.EnergyMethod" android:text="میفلین–سن ژئور" />
+                        <TextView android:id="@+id/pregnancy_mifflin_energy" style="@style/GrowthText" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                <TextView android:id="@+id/pregnancy_legacy_detail" style="@style/GrowthText.Muted" />
+                <com.google.android.material.textfield.TextInputLayout android:id="@+id/pregnancy_maintenance_layout"
+                    style="@style/GrowthField" android:layout_marginTop="12dp"
+                    android:hint="کالری نگهدارندهٔ پیش از بارداری (اختیاری)"
+                    app:helperText="دریافت معمولِ روزانه را وقتی وارد کنید که وزن پیش از بارداری پایدار و فعالیت آن دوره مشابه امروز بوده باشد."
+                    app:helperTextEnabled="true">
+                    <com.google.android.material.textfield.TextInputEditText android:id="@+id/pregnancy_maintenance"
+                        style="@style/GrowthInput" android:inputType="number" android:maxLength="4"
+                        android:textDirection="ltr" android:saveEnabled="false" />
+                </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.card.MaterialCardView style="@style/GrowthCard.EnergyResult"
+                    app:strokeColor="@color/growth_teal">
+                    <LinearLayout style="@style/GrowthScreen">
+                        <TextView android:id="@+id/pregnancy_recommendation" style="@style/GrowthText.EnergyMethod" />
+                        <TextView android:id="@+id/pregnancy_recommendation_reason" style="@style/GrowthText.Muted"
+                            android:layout_marginBottom="0dp" android:accessibilityLiveRegion="polite" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+            <com.google.android.material.button.MaterialButton android:id="@+id/pregnancy_save"
+                style="@style/GrowthButton" android:text="ثبت برآورد بارداری در این سنجش" android:visibility="gone" />
+            <LinearLayout android:id="@+id/plan_target" style="@style/GrowthScreen" android:visibility="gone">
+                <TextView style="@style/GrowthText.Section" android:layout_marginTop="12dp" android:text="۲. تعیین هدف غذایی" />
+                <LinearLayout android:id="@+id/target_suggestion" style="@style/GrowthScreen" android:visibility="gone">
+                    <TextView android:id="@+id/suggestion_text" style="@style/GrowthText.Section"
+                        android:textSize="15sp" android:accessibilityLiveRegion="polite" />
+                    <TextView android:id="@+id/reduction_notice" style="@style/GrowthText"
+                        android:fontFamily="@font/vazirmatn_bold" android:textSize="12sp"
+                        android:layout_marginBottom="8dp" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/deficit_picker"
+                        style="@style/GrowthButton.Outlined" android:text="تنظیم کاهش کالری" />
+                    <TextView android:id="@+id/reduction_amount" style="@style/GrowthText"
+                        android:gravity="center" android:textAlignment="center" android:textSize="15sp"
+                        android:layout_marginBottom="8dp" android:accessibilityLiveRegion="polite" android:visibility="gone" />
+                </LinearLayout>
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/GrowthField" android:hint="کالری هدف متخصص · کیلوکالری در روز">
+                    <com.google.android.material.textfield.TextInputEditText android:id="@+id/target_calories"
+                        style="@style/GrowthInput" android:inputType="number"
+                        android:maxLength="4" android:textDirection="ltr" />
+                </com.google.android.material.textfield.TextInputLayout>
+                <LinearLayout style="@style/GrowthScreen" android:orientation="horizontal" android:layout_marginBottom="10dp">
+                    <com.google.android.material.button.MaterialButton android:id="@+id/apply_suggestion"
+                        style="@style/GrowthNavigationButton" android:text="اعمال در رژیم" android:visibility="gone" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/apply_maintenance"
+                        style="@style/GrowthNavigationButton" android:text="استفاده از برآورد حفظ وزن" android:visibility="gone" />
+                </LinearLayout>
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/GrowthField" android:hint="دلیل انتخاب هدف (اختیاری)">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/nutrition_goal_reason" style="@style/GrowthInput"
+                        android:singleLine="false" android:inputType="textMultiLine|textCapSentences"
+                        android:maxLines="3" android:maxLength="500" />
+                </com.google.android.material.textfield.TextInputLayout>
+                <LinearLayout style="@style/GrowthScreen" android:orientation="horizontal">
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/GrowthField" android:hint="پروتئین (٪)" android:layout_width="0dp"
+                        android:layout_weight="1" android:layout_marginStart="4dp" android:layout_marginEnd="4dp">
+                        <com.google.android.material.textfield.TextInputEditText android:id="@+id/protein_percent"
+                            style="@style/GrowthInput" android:inputType="numberDecimal"
+                            android:maxLength="5" android:textDirection="ltr" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/GrowthField" android:hint="چربی (٪)" android:layout_width="0dp"
+                        android:layout_weight="1" android:layout_marginStart="4dp" android:layout_marginEnd="4dp">
+                        <com.google.android.material.textfield.TextInputEditText android:id="@+id/fat_percent"
+                            style="@style/GrowthInput" android:inputType="numberDecimal"
+                            android:maxLength="5" android:textDirection="ltr" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+                <TextView android:id="@+id/carb_percent" style="@style/GrowthText.Muted" android:accessibilityLiveRegion="polite" />
+                <TextView android:id="@+id/macro_review" style="@style/GrowthText.Muted"
+                    android:visibility="gone" />
+            </LinearLayout>
+            <com.google.android.material.button.MaterialButton android:id="@+id/plan_toggle" style="@style/GrowthButton.Outlined" android:text="ادامه به واحدها و وعده‌ها" />
+            <LinearLayout android:id="@+id/plan_inputs" style="@style/GrowthScreen" android:visibility="gone">
+                <TextView style="@style/GrowthText.Section" android:layout_marginTop="12dp" android:text="۳. واحدها و وعده‌ها" />
+                <TextView style="@style/GrowthText.Muted"
+                    android:text="سهم‌های اولیه با کالری هدف تنظیم می‌شوند. برای تغییر سهم می‌توانید یک رقم اعشار وارد کنید، مثلاً ۱٫۲ واحد." />
+                <LinearLayout style="@style/GrowthScreen" android:orientation="horizontal">
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/GrowthField" android:hint="شیر ۲٪" android:layout_width="0dp"
+                        android:layout_weight="1" android:layout_marginStart="4dp" android:layout_marginEnd="4dp">
+                        <com.google.android.material.textfield.TextInputEditText android:id="@+id/milk_units"
+                            style="@style/GrowthInput" android:inputType="numberDecimal"
+                            android:maxLength="5" android:textDirection="ltr" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/GrowthField" android:hint="سبزی" android:layout_width="0dp"
+                        android:layout_weight="1" android:layout_marginStart="4dp" android:layout_marginEnd="4dp">
+                        <com.google.android.material.textfield.TextInputEditText android:id="@+id/vegetable_units"
+                            style="@style/GrowthInput" android:inputType="numberDecimal"
+                            android:maxLength="5" android:textDirection="ltr" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+                <LinearLayout style="@style/GrowthScreen" android:orientation="horizontal">
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/GrowthField" android:hint="میوه" android:layout_width="0dp"
+                        android:layout_weight="1" android:layout_marginStart="4dp" android:layout_marginEnd="4dp">
+                        <com.google.android.material.textfield.TextInputEditText android:id="@+id/fruit_units"
+                            style="@style/GrowthInput" android:inputType="numberDecimal"
+                            android:maxLength="5" android:textDirection="ltr" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/GrowthField" android:hint="قند افزوده" android:layout_width="0dp"
+                        android:layout_weight="1" android:layout_marginStart="4dp" android:layout_marginEnd="4dp">
+                        <com.google.android.material.textfield.TextInputEditText android:id="@+id/sugar_units"
+                            style="@style/GrowthInput" android:inputType="numberDecimal"
+                            android:maxLength="5" android:textDirection="ltr" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+                <com.google.android.material.button.MaterialButton android:id="@+id/units_guide" style="@style/GrowthButton.Outlined" android:text="راهنمای اندازهٔ هر واحد" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/calculate_plan" style="@style/GrowthButton" android:text="محاسبهٔ واحدها و وعده‌ها" />
+                <TextView android:id="@+id/plan_error" style="@style/GrowthText.Muted" android:accessibilityLiveRegion="polite" />
+                <LinearLayout android:id="@+id/plan_result" style="@style/GrowthScreen" android:visibility="gone">
+                    <TextView android:id="@+id/plan_totals" style="@style/GrowthText.Section" />
+                    <com.google.android.material.button.MaterialButtonToggleGroup android:id="@+id/plan_mode_group"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp" android:saveEnabled="false"
+                        app:singleSelection="true" app:selectionRequired="true">
+                        <com.google.android.material.button.MaterialButton android:id="@+id/daily_mode" style="@style/GrowthNavigationButton"
+                            android:saveEnabled="false" android:text="واحدهای روزانه" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/meals_mode" style="@style/GrowthNavigationButton"
+                            android:saveEnabled="false" android:text="الگوی وعده‌ها" />
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
+                    <TextView android:id="@+id/exchange_view" style="@style/GrowthText.Muted" android:textSize="14sp" />
+                    <LinearLayout android:id="@+id/meal_view" style="@style/GrowthScreen" android:visibility="gone">
+                        <com.google.android.material.button.MaterialButton android:id="@+id/template_select" style="@style/GrowthButton.Outlined" android:text="الگوی وعده‌ها" />
+                        <TextView style="@style/GrowthText.Muted"
+                            android:text="با انتقال سهم بین وعده‌ها، مجموع روزانه ثابت می‌ماند. خوراک و مقدار دقیق را در یادداشت وعده ثبت کنید." />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/reset_meal_split"
+                            style="@style/GrowthButton.Outlined" android:text="بازگشت به تقسیم پیشنهادی" android:visibility="gone" />
+                        <LinearLayout android:id="@+id/meal_rows" style="@style/GrowthScreen" />
+                    </LinearLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/GrowthField" android:hint="یادداشت برای مراجعه‌کننده (اختیاری)">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/nutrition_patient_note" style="@style/GrowthInput"
+                            android:singleLine="false" android:inputType="textMultiLine|textCapSentences"
+                            android:maxLines="4" android:maxLength="500" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.button.MaterialButton android:id="@+id/preview_plan"
+                        style="@style/GrowthButton" android:text="پیش‌نمایش و اشتراک برنامه" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

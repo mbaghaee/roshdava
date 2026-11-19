@@ -13,3 +13,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+/.codex/
+/.kotlin/
+/app/release/
+*.[aA][pP][kK]
+*.[rR][aA][rR]

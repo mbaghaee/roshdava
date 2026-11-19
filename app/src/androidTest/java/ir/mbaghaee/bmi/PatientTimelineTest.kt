@@ -38,11 +38,11 @@ class PatientTimelineTest {
  }
  @Test fun referencesIncludeEarlierMeasurements(){
   val current=Patient("",2,2300,23.0,122.0);val previous=listOf(current.copy(days=2100,weight=21.0,height=118.0),current.copy(days=2200,weight=22.0,height=120.0))
-  for(m in engine.assess(current).metrics){val plot=engine.plotFor(current,m,visits=previous)!!;assertEquals(2,plot.history.size);assertTrue(plot.history.all{it.x in plot.xMin..plot.xMax});assertEquals(listOf(2100,2200),plot.history.map{it.day})}
+  for(m in engine.assess(current).metrics){val plot=engine.plotFor(current,m,visits=previous.mapIndexed{i,p->ChartVisit(i+1L,p)})!!;assertEquals(2,plot.history.size);assertTrue(plot.history.all{it.x in plot.xMin..plot.xMax});assertEquals(listOf(2100,2200),plot.history.map{it.day})}
  }
  @Test fun trendDoesNotLosePointsAcrossReferenceTransition(){
   val current=Patient("",2,1900,19.0,111.0);val previous=listOf(current.copy(days=1800,height=108.0,weight=18.0))
-  val plot=engine.measurementTrend(current,"height",previous);assertEquals(1,plot.history.size);assertTrue(plot.curves.isEmpty());assertEquals(108.0,plot.history[0].y,0.0)
+  val plot=engine.measurementTrend(current,"height",previous.map{ChartVisit(1,it)});assertEquals(1,plot.history.size);assertTrue(plot.curves.isEmpty());assertEquals(108.0,plot.history[0].y,0.0)
  }
  @Test fun inconsistentDemographicsAreNotCompatible(){val p=Patient("",2,2100,21.0,118.0);val s=SavedAssessment(p,engine.assess(p),1000,2000);assertTrue(HistoryTimeline.compatible(s,1000,2));assertFalse(HistoryTimeline.compatible(s,1001,2));assertFalse(HistoryTimeline.compatible(s,1000,1))}
  @Test fun optionalMissingFlagsDoNotHideWholeReport(){

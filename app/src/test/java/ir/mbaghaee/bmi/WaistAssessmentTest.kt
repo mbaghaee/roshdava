@@ -37,13 +37,18 @@ class WaistAssessmentTest {
   assertEquals(WaistAssessment.UNCLASSIFIED,WaistAssessment.metric(patient(.6,2200).copy(waistRestricted=true),22.0)!!.status)
   assertEquals(WaistAssessment.UNCLASSIFIED,WaistAssessment.metric(patient(days=2200),22.0,referenceBmiValid=false)!!.status)
  }
+ @Test fun iranianWaistReferenceShowsDistanceAndKeepsTheExactThreshold(){
+  assertTrue(WaistAssessment.iranianWaistPosition(112.0).contains("۲۲٫۰ سانتی‌متر بالاتر"))
+  assertTrue(WaistAssessment.iranianWaistPosition(87.5).contains("۲٫۵ سانتی‌متر پایین‌تر"))
+  assertTrue(WaistAssessment.iranianWaistPosition(90.0).startsWith("روی آستانه"))
+ }
  @Test fun chartSkipsMissingValuesAndUsesEachVisitsHeight(){
   val p=patient(.5);val old=p.copy(days=9000,height=180.0,waist=90.0);val missing=p.copy(days=9500,waist=null)
-  val ratio=WaistAssessment.trend(p,listOf(old,missing),true)!!
+  val ratio=WaistAssessment.trend(p,listOf(ChartVisit(1,old),ChartVisit(2,missing)),true)!!
   assertEquals(1,ratio.history.size);assertEquals(.5,ratio.history.first().y,1e-10)
   assertEquals("سن · سال",ratio.xLabel);assertEquals(3,ratio.yDecimals)
   assertEquals(.01,ratio.minYPadding,1e-10);assertTrue(ratio.curves.isEmpty());assertTrue(ratio.bands.isEmpty())
-  val waist=WaistAssessment.trend(p,listOf(old,missing),false)!!
+  val waist=WaistAssessment.trend(p,listOf(ChartVisit(1,old),ChartVisit(2,missing)),false)!!
   assertEquals(90.0,waist.history.first().y,1e-10);assertEquals(100.0,waist.point.y,1e-10)
  }
  @Test fun comparisonUsesClosestEarlierDayWithWaist(){

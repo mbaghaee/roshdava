@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" style="@style/GrowthScreen"
+    android:paddingStart="24dp" android:paddingEnd="24dp">
+    <TextView android:id="@+id/maintenance" style="@style/GrowthText.Muted" />
+    <NumberPicker android:id="@+id/reduction_wheel" android:layout_width="wrap_content"
+        android:layout_height="wrap_content" android:layout_gravity="center_horizontal"
+        android:layoutDirection="ltr" android:theme="@style/NutritionCalorieWheel" />
+    <TextView android:id="@+id/current_reduction" style="@style/GrowthText.Section"
+        android:gravity="center" android:textAlignment="center" android:textSize="16sp" />
+    <TextView android:id="@+id/reduction_target_preview" style="@style/GrowthText.Section"
+        android:gravity="center" android:textAlignment="center" android:textSize="15sp"
+        android:accessibilityLiveRegion="polite" />
+    <TextView android:id="@+id/weekly_equivalent" style="@style/GrowthText"
+        android:gravity="center" android:textAlignment="center" android:accessibilityLiveRegion="polite" />
+    <TextView style="@style/GrowthText.Muted"
+        android:text="درصد، معادل انرژی کاهش‌یافته در ۷ روز است. روند واقعی وزن به آب بدن، ترکیب بدن و واکنش فرد بستگی دارد." />
+</LinearLayout>

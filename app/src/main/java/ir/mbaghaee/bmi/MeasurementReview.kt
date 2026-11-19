@@ -28,9 +28,9 @@ object MeasurementReview {
    append("\nتغییر عدد یا صدک به‌تنهایی به معنی بهبود یا بدتر شدن نیست؛ تغییر مرجع با صدک قبلی مقایسه نمی‌شود.")
   }
  }
- fun warnings(p:Patient,old:Patient?):List<String> {
-  if(old==null||p.sex!=old.sex||p.days<=old.days)return emptyList()
-  val days=p.days-old.days;val messages=mutableListOf<String>()
+ fun warnings(p:Patient,old:Patient?,elapsedDays:Int?=old?.let{p.days-it.days}):List<String> {
+  if(old==null||p.sex!=old.sex||elapsedDays==null||elapsedDays<=0)return emptyList()
+  val days=elapsedDays;val messages=mutableListOf<String>()
   if(p.lying==old.lying&&p.height<old.height-1.0)messages+="قد از ${number(old.height)} به ${number(p.height)} سانتی‌متر کاهش یافته است؛ عدد، روش اندازه‌گیری و تاریخ را بازبینی کنید."
   if(days<=30&&p.height-old.height>10.0)messages+="قد در ${number(days.toDouble(),0)} روز بیش از ۱۰ سانتی‌متر افزایش یافته است؛ احتمال جابه‌جایی رقم یا واحد را بررسی کنید."
   if(days<=30&&old.weight>0&&abs(p.weight-old.weight)/old.weight>=.20)messages+="وزن در ${number(days.toDouble(),0)} روز از ${number(old.weight)} به ${number(p.weight)} کیلوگرم تغییر کرده است؛ مقدار و واحد را بازبینی کنید."

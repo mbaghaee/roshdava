@@ -14,6 +14,7 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.widget.doAfterTextChanged
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -26,6 +27,7 @@ import ir.mbaghaee.bmi.databinding.*
 import ir.mbaghaee.bmi.GrowthScreen as Screen
 
 class MainActivity : AppCompatActivity() {
+ private companion object { val historyLock=Any() }
  private val ink by lazy{getColor(R.color.growth_ink)}
  private val teal by lazy{getColor(R.color.growth_teal)}
  private val muted by lazy{getColor(R.color.growth_muted)}
@@ -41,7 +43,12 @@ class MainActivity : AppCompatActivity() {
  private lateinit var waistSection:LinearLayout
  private lateinit var headBox:TextInputLayout;private lateinit var waistBox:TextInputLayout;private lateinit var birthButton:MaterialButton;private lateinit var visitButton:MaterialButton
  private lateinit var pregnancyForm:FormPregnancyBinding
+ private lateinit var approximateAge:MaterialCheckBox
+ private lateinit var approximateAgeBox:TextInputLayout
+ private lateinit var approximateAgeInput:TextInputEditText
  private val state=AssessmentUiState()
+ private var nutritionCard: NutritionCard? = null
+ private var restoredNutrition: JSONObject? = null
  private val navigationButtons=mutableMapOf<Screen,MaterialButton>()
  private var backupBusy=false
  private val createBackupDocument=registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")){uri->if(uri!=null)writeBackup(uri)}
@@ -71,6 +78,7 @@ class MainActivity : AppCompatActivity() {
   state.restoreForm(draft)
   editingRecordId=savedInstanceState?.getLong("editingRecordId",0L)?:0L
   shell();form()
+  restoredNutrition=savedInstanceState?.getString("nutritionDraft")?.let{runCatching{JSONObject(it)}.getOrNull()}
   when(savedInstanceState?.getString("screen")){
    Screen.BACKUP.name->backupScreen()
    Screen.HISTORY.name->history(savedInstanceState?.getString("profile"))
@@ -88,19 +96,23 @@ class MainActivity : AppCompatActivity() {
   onBackPressedDispatcher.addCallback(this,object:OnBackPressedCallback(true){override fun handleOnBackPressed(){if(currentScreen==Screen.FORM&&editingRecordId!=0L)cancelEdit() else if(currentScreen==Screen.RESULT&&resultFromHistory)history(viewedRecord?.optString("patientId")) else if(currentScreen==Screen.HISTORY&&openedProfileId!=null)history() else if(currentScreen!=Screen.FORM)form() else {captureDraft();finish()}}})
  }
  override fun onSaveInstanceState(out:Bundle){
+  if(currentScreen==Screen.RESULT)nutritionCard?.let{out.putString("nutritionDraft",it.capture().toString())}
   captureDraft();state.save(out,scroll.scrollY);super.onSaveInstanceState(out)
  }
  override fun onPause(){captureDraft();super.onPause()}
  private fun captureDraft(){
   if(currentScreen!=Screen.FORM||!::name.isInitialized)return
   draft=JSONObject().put("name",name.text.toString()).put("weight",weight.text.toString()).put("height",height.text.toString()).put("head",head.text.toString()).put("waist",waist.text.toString())
-   .put("lying",lying.isChecked).put("pre",premature.isChecked).put("preg",pregnant.isChecked).put("waistRestricted",false).put("birth",birth).put("visit",visit).put("selected",selectedBirth).put("sex",sex).put("patientId",activePatientId)
+   .put("lying",lying.isChecked).put("pre",premature.isChecked).put("preg",pregnant.isChecked).put("waistRestricted",false).put("visit",visit).put("selected",selectedBirth&&!approximateAge.isChecked).put("sex",sex).put("patientId",activePatientId)
+   .put("approximateAge",approximateAge.isChecked).put("approximateYears",approximateAgeInput.text.toString())
+  if(!approximateAge.isChecked)draft.put("birth",birth)
   draft.put("pregnancyId",pregnancyId).put("prePregnancyWeight",pregnancyForm.preWeightInput.text.toString())
    .put("pregnancyWeek",pregnancyForm.weekInput.text.toString()).put("pregnancyDay",pregnancyForm.dayInput.text.toString()).put("pregnancyPlurality",selectedPlurality()).put("fetusCount",pregnancyForm.fetusCountInput.text.toString())
-  prefs.edit().putString("draft",draft.toString()).apply()
+  storeDraft(draft)
  }
  private fun restoreInputs(){
   name.setText(draft.optString("name"));weight.setText(draft.optString("weight"));height.setText(draft.optString("height"));head.setText(draft.optString("head"));waist.setText(draft.optString("waist"))
+  approximateAge.isChecked=draft.optBoolean("approximateAge");approximateAgeInput.setText(draft.optString("approximateYears"))
   pregnancyForm.preWeightInput.setText(draft.optString("prePregnancyWeight"))
   pregnancyForm.weekInput.setText(draft.optString("pregnancyWeek"))
   pregnancyForm.dayInput.setText(draft.optString("pregnancyDay","0"))
@@ -114,7 +126,7 @@ class MainActivity : AppCompatActivity() {
   lying.isChecked=draft.optBoolean("lying");premature.isChecked=draft.optBoolean("pre");pregnant.isChecked=draft.optBoolean("preg")
  }
  private fun freshAssessment(){
-  activePatientId="";pregnancyId="";resultSnapshot=null;draft=JSONObject();prefs.edit().remove("draft").apply();sex=2;birth=utc(2000,0,1);visit=today();selectedBirth=false;editingRecordId=0L
+  activePatientId="";pregnancyId="";resultSnapshot=null;draft=JSONObject();storeDraft(null);sex=2;birth=utc(2000,0,1);visit=today();selectedBirth=false;editingRecordId=0L
   currentScreen=Screen.RESULT // Prevent the previous form from restoring its old draft during reset.
   form()
  }
@@ -195,6 +207,9 @@ class MainActivity : AppCompatActivity() {
   pregnant.setOnCheckedChangeListener{_,_->updatePregnancyVisibility()}
   pregnancyForm.pluralityGroup.addOnButtonCheckedListener{_,_,_->stylePlurality()}
   birthButton=binding.birthButton;visitButton=binding.visitButton
+  approximateAge=binding.approximateAgeCheckbox;approximateAgeBox=binding.approximateAgeBox;approximateAgeInput=binding.approximateAgeInput
+  approximateAge.setOnCheckedChangeListener{_,_->approximateAgeBox.error=null;updateAge()}
+  approximateAgeInput.doAfterTextChanged{approximateAgeBox.error=null;updateAge()}
   binding.profileNotice.visibility=if(activePatientId.isBlank())View.GONE else View.VISIBLE
   val group=binding.genderGroup;val girl=binding.girlButton;val boy=binding.boyButton
   fun styleGender(){
@@ -219,16 +234,23 @@ class MainActivity : AppCompatActivity() {
  }
  private fun updateAge(){
   if(!::headBox.isInitialized)return
-  val days=((visit-birth)/86400000).toInt();val young=selectedBirth&&days<1827
-  val hasWaist=selectedBirth&&days>=WaistAssessment.MIN_AGE_DAYS
+  val approximate=approximateAge.isChecked
+  birthButton.visibility=if(approximate)View.GONE else View.VISIBLE
+  approximateAgeBox.visibility=if(approximate)View.VISIBLE else View.GONE
+  val days=formAgeDays()
+  val young=days!=null&&days<1827
+  val hasWaist=days!=null&&days>=WaistAssessment.MIN_AGE_DAYS
   headBox.visibility=if(young)View.VISIBLE else View.GONE
   waistBox.visibility=if(hasWaist)View.VISIBLE else View.GONE
   waistSection.visibility=if(hasWaist)View.VISIBLE else View.GONE
   lying.visibility=if(young)View.VISIBLE else View.GONE
-  premature.visibility=if(selectedBirth&&days<731)View.VISIBLE else View.GONE
-  pregnant.visibility=if(selectedBirth&&days>=6575&&sex==2)View.VISIBLE else View.GONE
+  premature.visibility=if(days!=null&&days<731)View.VISIBLE else View.GONE
+  pregnant.visibility=if(PregnancyAssessment.canRecord(sex,days))View.VISIBLE else View.GONE
   updatePregnancyVisibility()
  }
+ private fun formAgeDays():Int? = if(approximateAge.isChecked)
+  AssessmentAge.parseYears(approximateAgeInput.text.toString())?.let(AssessmentAge::approximateDays)
+ else if(selectedBirth&&birth<=visit)AssessmentAge.elapsedDays(birth,visit) else null
  private fun updatePregnancyVisibility(){
   if(::pregnancyForm.isInitialized)pregnancyForm.root.visibility=if(pregnant.visibility==View.VISIBLE&&pregnant.isChecked)View.VISIBLE else View.GONE
  }
@@ -250,15 +272,15 @@ class MainActivity : AppCompatActivity() {
  private fun newPregnancy(record:JSONObject){
   val saved=SavedAssessment.decode(record)?:LegacyAssessmentReader.read(record,engine)?:return
   val profileId=record.optString("patientId")
-  if(profileId.isBlank()||saved.patient.sex!=2||saved.patient.days<6575)return
+  if(profileId.isBlank()||!PregnancyAssessment.canRecord(saved.patient.sex,saved.patient.days))return
   MaterialAlertDialogBuilder(this).setTitle("شروع بارداری بعدی؟")
    .setMessage("فرم برای بارداری دیگری از همین فرد آماده می‌شود؛ وزن پیش از بارداری، هفته و اندازه‌های جدید را باید دوباره وارد کنید. ورودی‌های فرم جاری کنار گذاشته می‌شوند و سوابق ثبت‌شده حفظ می‌شوند.\n\nبرای ثبت سنجش بعدیِ همین بارداری، «سنجش جدید برای همین فرد» را انتخاب کنید.")
    .setNegativeButton("انصراف",null).setPositiveButton("آماده‌سازی فرم بارداری بعدی"){_,_->
     captureDraft();editingRecordId=0L;resultSnapshot=null;viewedRecord=null;resultFromHistory=false
-    state.restoreForm(JSONObject().put("patientId",profileId).put("name",saved.patient.name).put("birth",saved.birthUtc)
-     .put("visit",today()).put("selected",true).put("sex",saved.patient.sex).put("preg",true)
+    state.restoreForm(JSONObject().put("patientId",profileId).put("name",saved.patient.name).withSavedAge(saved)
+     .put("visit",today()).put("sex",saved.patient.sex).put("preg",true)
      .put("pregnancyId","").put("prePregnancyWeight","").put("pregnancyWeek","").put("pregnancyDay","0").put("pregnancyPlurality",0).put("fetusCount",""))
-    prefs.edit().putString("draft",draft.toString()).apply();currentScreen=Screen.RESULT;form()
+    storeDraft(draft);currentScreen=Screen.RESULT;form()
    }.show().also{d->d.window?.decorView?.let{applyFonts(it)}}
  }
  private fun readPregnancyInfo():PregnancyInfo? {
@@ -295,7 +317,7 @@ class MainActivity : AppCompatActivity() {
   return true
  }
  private fun pickDate(isBirth:Boolean){
-  val minUtc=if(!isBirth&&selectedBirth)birth else utc(Calendar.getInstance().get(Calendar.YEAR)-120,0,1)
+  val minUtc=if(!isBirth&&selectedBirth&&!approximateAge.isChecked)birth else utc(Calendar.getInstance().get(Calendar.YEAR)-120,0,1)
   val maxUtc=if(isBirth)visit else today()
   if(minUtc>maxUtc){toast("بازه تاریخ نامعتبر است؛ تاریخ سنجش را بررسی کنید.");return}
   val low=SolarDate.fromUtc(minUtc);val high=SolarDate.fromUtc(maxUtc)
@@ -330,7 +352,15 @@ class MainActivity : AppCompatActivity() {
  }
  private fun number(e:TextInputEditText):Double? {var s=e.text.toString().trim().replace('٫','.').replace("٬","");for(i in 0..9){s=s.replace("۰۱۲۳۴۵۶۷۸۹"[i],('0'.code+i).toChar()).replace("٠١٢٣٤٥٦٧٨٩"[i],('0'.code+i).toChar())};return s.toDoubleOrNull()}
  private fun calculate(){
-  if(!selectedBirth){toast("ابتدا تاریخ تولد را انتخاب کنید.");return};if(birth>visit){toast("تاریخ تولد نباید بعد از سنجش باشد.");return}
+  val days=formAgeDays()
+  if(days==null){
+   if(approximateAge.isChecked){
+    approximateAgeBox.error="سن را به‌صورت عدد صحیح بین ۱۹ و ۱۲۰ سال وارد کنید."
+    approximateAgeInput.requestFocus()
+   }else toast(if(selectedBirth)"تاریخ تولد نباید بعد از سنجش باشد." else "تاریخ تولد یا سن تقریبی را وارد کنید.")
+   return
+  }
+  val birthAt=if(approximateAge.isChecked)null else birth
   weight.error=null;height.error=null;val w=number(weight);val h=number(height);if(w==null){weight.error="وزن معتبر وارد کنید";weight.requestFocus();return};if(h==null){height.error="قد معتبر وارد کنید";height.requestFocus();return}
   if(h in .25..2.5){height.error="قد را به سانتی‌متر وارد کنید؛ مثلاً ۱٫۷ متر برابر ۱۷۰ سانتی‌متر است.";height.requestFocus();return}
   val hc=if(headBox.visibility==View.VISIBLE&&head.text.toString().isNotBlank())number(head) else null;val wc=if(waistBox.visibility==View.VISIBLE&&waist.text.toString().isNotBlank())number(waist) else null
@@ -339,18 +369,22 @@ class MainActivity : AppCompatActivity() {
   val pregnancyInfo=readPregnancyInfo()
   if(isPregnant&&pregnancyInfo==null)return
   if(pregnancyInfo!=null&&!pregnancyTimingMatches(pregnancyInfo))return
-  val p=Patient(name.text.toString().trim(),sex,((visit-birth)/86400000).toInt(),w,h,lying.visibility==View.VISIBLE&&lying.isChecked,hc,wc,premature.visibility==View.VISIBLE&&premature.isChecked,isPregnant,pregnancy=pregnancyInfo)
+  val p=Patient(name.text.toString().trim(),sex,days,w,h,lying.visibility==View.VISIBLE&&lying.isChecked,hc,wc,premature.visibility==View.VISIBLE&&premature.isChecked,isPregnant,pregnancy=pregnancyInfo)
   try{
    val prior=HistoryTimeline.forPatient(historyData(),activePatientId).firstNotNullOfOrNull{SavedAssessment.decode(it)}
-   if(prior!=null&&!HistoryTimeline.compatible(prior,birth,sex)){toast("تاریخ تولد و جنسیت باید با پرونده یکسان باشند؛ برای فرد دیگر ارزیابی تازه را بزنید.");return}
+   if(prior!=null&&!HistoryTimeline.compatible(prior,birthAt,sex)){
+    toast(if((prior.birthUtc==null)!=(birthAt==null))"روش ثبت سن را مانند سنجش قبلی این پرونده انتخاب کنید."
+     else "تاریخ تولد و جنسیت باید با پرونده یکسان باشند؛ برای فرد دیگر ارزیابی تازه را بزنید.")
+    return
+   }
    val a=engine.assess(p)
    val visits=HistoryTimeline.forPatient(historyData(),activePatientId).filter{it.optLong("id")!=editingRecordId}.mapNotNull{SavedAssessment.decode(it)}
-   val previous=MeasurementReview.previous(SavedAssessment(p,a,birth,visit),visits)
-   val warnings=MeasurementReview.warnings(p,previous?.patient)
+   val previous=MeasurementReview.previous(SavedAssessment(p,a,birthAt,visit),visits)
+   val warnings=MeasurementReview.warnings(p,previous?.patient,previous?.let{AssessmentAge.elapsedDays(it.visitUtc,visit)})
    fun proceed(){
     if(activePatientId.isBlank())activePatientId=UUID.randomUUID().toString()
     (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(weight.windowToken,0)
-    result(p,if(warnings.isEmpty())a else a.copy(notes=a.notes+warnings.map{"بازبینی اندازه‌گیری: $it"}))
+    result(p,if(warnings.isEmpty())a else a.copy(notes=a.notes+warnings.map{"بازبینی اندازه‌گیری: $it"}),birthAt)
    }
    if(warnings.isEmpty())proceed() else MaterialAlertDialogBuilder(this).setTitle("اندازه‌ها نیازمند بازبینی هستند")
     .setMessage(warnings.joinToString("\n\n")+"\n\nاین پیام‌ها فقط احتمال خطای ورود را گوشزد می‌کنند؛ تغییر ممکن است واقعی باشد و تشخیص پزشکی نیست.")
@@ -358,7 +392,7 @@ class MainActivity : AppCompatActivity() {
     .setPositiveButton("اندازه‌ها را بررسی کردم؛ ادامه"){_,_->proceed()}.show().also{d->d.window?.decorView?.let{applyFonts(it)}}
   }catch(e:IllegalArgumentException){toast(e.message?:"ورودی نامعتبر است")}
  }
- private fun result(p:Patient,a:Assessment,birthAt:Long=birth,visitAt:Long=visit,record:JSONObject?=null){
+ private fun result(p:Patient,a:Assessment,birthAt:Long?,visitAt:Long=visit,record:JSONObject?=null){
   captureDraft();resultFromHistory=record!=null;currentScreen=Screen.RESULT;viewedRecord=record
   val report=record?.optString("report")?.takeIf{it.isNotBlank()}?:report(p,a,birthAt,visitAt)
   val stamp=System.currentTimeMillis();val profileId=record?.optString("patientId")?:activePatientId
@@ -366,13 +400,22 @@ class MainActivity : AppCompatActivity() {
   val editing=record==null&&editingRecordId!=0L
   val records=historyData();val matching=HistoryTimeline.matchingMeasurement(records,profileId,p,birthAt,visitAt)
   val shownId=record?.optLong("id")?:matching?.optLong("id")
-  val priorPatients=HistoryTimeline.forPatient(records,profileId).filter{it.optLong("id")!=shownId&&!(editing&&it.optLong("id")==editingRecordId)}
-   .mapNotNull{SavedAssessment.decode(it)}.filter{HistoryTimeline.compatible(it,birthAt,p.sex)}.map{it.patient}
+  // In approximate mode, align charts by actual visit dates, independent of the age entered at each visit.
+  val chartAnchor=birthAt?:visitAt-p.days*AssessmentAge.DAY_MS
+  val chartVisits=HistoryTimeline.forPatient(records,profileId).mapNotNull{r->
+   val id=r.optLong("id")
+   if(id==shownId||(editing&&id==editingRecordId))return@mapNotNull null
+   val saved=SavedAssessment.decode(r)?.takeIf{HistoryTimeline.compatible(it,birthAt,p.sex)}?:return@mapNotNull null
+   val patient=if(birthAt==null)saved.patient.copy(days=AssessmentAge.elapsedDays(chartAnchor,saved.visitUtc)) else saved.patient
+   r to ChartVisit(id,patient)
+  }
+  val priorVisits=chartVisits.map{it.second}
+  val currentChartId=shownId?:ChartExplorerData.CURRENT_VISIT_ID
   chartRecords=JSONArray().apply{
-   HistoryTimeline.forPatient(records,profileId).filter{!(editing&&it.optLong("id")==editingRecordId)}.forEach{r->
-    SavedAssessment.decode(r)?.takeIf{HistoryTimeline.compatible(it,birthAt,p.sex)}?.let{put(JSONObject(r.toString()))}
-   }
-   if(record==null&&matching==null)resultSnapshot?.let{put(JSONObject(it.toString()).put("explorerCurrent",true))}
+   chartVisits.forEach{(r,_)->put(r)}
+   val current=record?:matching
+   if(current!=null)put(current)
+   else resultSnapshot?.let{put(JSONObject(it.toString()).put("explorerCurrent",true))}
   }
   body.removeAllViews();chartViews.clear()
   val binding=ScreenAssessmentResultBinding.inflate(layoutInflater,body,true)
@@ -383,11 +426,11 @@ class MainActivity : AppCompatActivity() {
   binding.previousComparison.root.visibility=if(previous==null)View.GONE else View.VISIBLE
   if(previous!=null)binding.previousComparison.comparisonText.text=MeasurementReview.summary(SavedAssessment(p,a,birthAt,visitAt),previous)
   binding.referenceGroup.text=a.group
-  binding.bmiValue.text=SolarDate.persian(String.format(Locale.US,"%.1f",a.pregnancy?.preBmi?:a.bmi))
+  binding.bmiValue.text=bmiText(a.pregnancy?.preBmi?:a.bmi,usesAdultBmi(p,a),1)
   binding.bmiLabel.text=when{a.pregnancy!=null->"BMI پیش از بارداری · kg/m²";p.pregnant->"BMI فعلی؛ برای تفسیر بارداری کافی نیست";else->"شاخص توده بدنی · kg/m²"}
   val adultWeightMetric=if(a.adult&&!p.pregnant)a.metrics.firstOrNull{it.title=="وضعیت وزن"&&it.z==null&&it.indicator.isBlank()} else null
   bindStatus(binding.weightStatus,a.pregnancy?.category?:adultWeightMetric?.status?:a.metrics.firstOrNull()?.status?:"",Color.WHITE)
-  binding.ageSex.text="${if(p.sex==1)"پسر / مرد" else "دختر / زن"}  ·  ${ageDescription(p.days)}"
+  binding.ageSex.text="${if(p.sex==1)"پسر / مرد" else "دختر / زن"}  ·  ${ageDescription(p.days,birthAt==null)}"
   binding.measurements.text=SolarDate.persian("وزن: ${p.weight} کیلوگرم  ·  قد: ${p.height} سانتی‌متر")
   val preBmi=if(p.pregnant&&p.days>=6575)a.pregnancy?.preBmi else null
   val scaleScore=preBmi?:a.score?.takeUnless{p.pregnant}
@@ -397,8 +440,25 @@ class MainActivity : AppCompatActivity() {
   binding.scaleDescription.text=if(preBmi!=null)"نشانگر نوار: BMI پیش از بارداری؛ وزن‌گیری فعلی در کارت بارداری ارزیابی می‌شود." else if(a.adult)adultWeightMetric?.detail?.takeIf{it.isNotBlank()}?:"نشانگر نوار: BMI بر پایه مرزهای بزرگسالان" else if(p.days/30.4375<60)"نشانگر نوار: تناسب وزن با قد، در مقیاس استاندارد" else "نشانگر نوار: BMI نسبت به سن، در مقیاس استاندارد"
   binding.childExplanation.visibility=if(a.adult||p.pregnant)View.GONE else View.VISIBLE
   binding.percentileNotice.visibility=if(a.adult||p.pregnant)View.GONE else View.VISIBLE
-  bindPregnancyCard(binding.pregnancyAssessment,p,a,priorPatients,birthAt)
-  bindWaistCard(binding.waistAssessment,p,a,priorPatients)
+  bindPregnancyCard(binding.pregnancyAssessment,p,a,priorVisits,currentChartId,chartAnchor,birthAt==null)
+  bindWaistCard(binding.waistAssessment,p,a,priorVisits.map{it.patient})
+  val editingSource = if (editing) HistoryTimeline.records(records).firstOrNull {
+   it.optLong("id") == editingRecordId && it.optString("patientId") == profileId
+  } else null
+  val previousNutrition = if (editing) {
+   editingSource?.takeIf { nutritionInputsMatch(it, p) }?.optJSONObject("nutrition")
+  } else (record ?: matching)?.optJSONObject("nutrition")
+  var saveEdited: ((JSONObject?) -> Boolean)? = null
+  nutritionCard = NutritionCard(binding.nutritionCard, p, a.adult, restoredNutrition ?: previousNutrition) { plan ->
+   if (!p.pregnant) false
+   else if (editing) saveEdited?.invoke(plan) == true
+   else saveNutritionPlan(record, profileId, p, birthAt, visitAt, plan) {
+    SavedAssessment(p,a,birthAt,visitAt).encode(stamp,date(visitAt),report,profileId)
+   }.also { saved ->
+    if (saved) binding.saveButton.text = "این سنجش قبلاً ثبت شده است"
+   }
+  }
+  restoredNutrition = null
   val adultHeightPlaceholder=if(a.adult)a.metrics.firstOrNull{it.title=="وضعیت قد"&&it.status=="قد ثبت‌شده"&&it.z==null&&it.indicator.isBlank()} else null
   for(m in a.metrics.filterNot{it==adultWeightMetric||it==adultHeightPlaceholder||WaistAssessment.isWaistMetric(it)||it.indicator==PregnancyAssessment.INDICATOR||(p.pregnant&&it.title=="وضعیت وزن")}){
    val item=ItemGrowthMetricBinding.inflate(layoutInflater,binding.metricsContainer,true)
@@ -413,14 +473,15 @@ class MainActivity : AppCompatActivity() {
     item.zExplanation.text=Percentiles.explanation(z)
     item.zToggle.setOnClickListener{item.zExplanation.visibility=if(item.zExplanation.visibility==View.GONE)View.VISIBLE else View.GONE}
    }
-   val near=engine.plotFor(p,m,visits=priorPatients)
+   val near=engine.plotFor(p,m,visits=priorVisits,visitId=currentChartId)
    item.referenceChart.root.visibility=if(near==null)View.GONE else View.VISIBLE
    if(near!=null){
-    bindChart(item.referenceChart,near,birthAt)
-    item.referenceChart.bandLegend.text=ReferenceBands.legend(m.indicator)
+    bindChart(item.referenceChart,near,chartAnchor)
+    item.referenceChart.curveLegend.text="عدد کنار هر خط، صدک مرجع است. خط پررنگ: میانه (۵۰). نقطهٔ پررنگ: این نوبت؛ نقاط دیگر: سنجش‌های همین پرونده."
+   item.referenceChart.bandLegend.text=ReferenceBands.legend(m.indicator)
     var full=false
     item.referenceChart.zoomButton.setOnClickListener{
-     full=!full;item.referenceChart.chart.setPlot(if(full)engine.plotFor(p,m,true,priorPatients)?:near else near)
+     full=!full;item.referenceChart.chart.setPlot(if(full)engine.plotFor(p,m,true,priorVisits,currentChartId)?:near else near)
      item.referenceChart.zoomButton.text=if(full)"نمای نزدیک کودک" else "نمای کل مرجع"
     }
    }
@@ -430,16 +491,17 @@ class MainActivity : AppCompatActivity() {
   fun showTrend(plot:ReferencePlot,title:String,legend:String){
    if(plot.history.isEmpty()){missingTrends+=title.removePrefix("روند ");return}
    val chart=ItemMeasurementTrendBinding.inflate(layoutInflater,binding.trendsContainer,true).trendChart
-   bindChart(chart,plot,birthAt);chart.chartTitle.text=title
+   bindChart(chart,if(birthAt==null)AssessmentAge.byVisitDate(plot) else plot,chartAnchor);chart.chartTitle.text=title
    chart.chartTitle.textSize=18f;chart.zoomButton.visibility=View.GONE;chart.bandLegend.visibility=View.GONE
    chart.curveLegend.text=legend
   }
   for(kind in listOf("height","weight")){
-   showTrend(engine.measurementTrend(p,kind,priorPatients),if(kind=="height")"روند قد ثبت‌شده" else "روند وزن ثبت‌شده",
-    "این نمودار، اندازه‌های ثبت‌شده را به ترتیب سن نشان می‌دهد؛ خطوط مرجع در کارت‌های بالا هستند.")
+   showTrend(engine.measurementTrend(p,kind,priorVisits,currentChartId),if(kind=="height")"روند قد ثبت‌شده" else "روند وزن ثبت‌شده",
+    if(birthAt==null)"اندازه‌ها به ترتیب تاریخ سنجش رسم شده‌اند؛ صفر یعنی تاریخ همین سنجش."
+     else "این نمودار، اندازه‌های ثبت‌شده را به ترتیب سن نشان می‌دهد؛ خطوط مرجع در کارت‌های بالا هستند.")
   }
   if(p.waist!=null)for(asRatio in listOf(false,true)){
-   val plot=WaistAssessment.trend(p,priorPatients,asRatio)?:continue
+   val plot=WaistAssessment.trend(p,priorVisits,asRatio,currentChartId)?:continue
    showTrend(plot,if(asRatio)"روند نسبت دور کمر به قد" else "روند دور کمر",
     "فقط نوبت‌های دارای دور کمر رسم شده‌اند. این نمودار اندازه‌های ثبت‌شده است؛ تفسیر چربی شکمی را در کارت بخوانید. با لمس نقطه، عدد و تاریخ همان نوبت دیده می‌شود.")
   }
@@ -449,43 +511,49 @@ class MainActivity : AppCompatActivity() {
   for(note in a.notes)binding.notesContainer.addView(label(note,13).apply{
    layoutParams=LinearLayout.LayoutParams(-1,-2).apply{bottomMargin=dp(8)}
   })
-  binding.ageReference.text="سن سنجش: ${ageDescription(p.days)} · "+if(p.pregnant)"راهنمای وزن‌گیری بارداری؛ منابع در کارت" else "مرجع WHO / BMI بزرگسالان"
+  binding.ageReference.text="سن سنجش: ${ageDescription(p.days,birthAt==null)} · "+if(p.pregnant)"راهنمای وزن‌گیری بارداری؛ منابع در کارت" else "مرجع WHO / BMI بزرگسالان"
   binding.saveButton.visibility=if(record==null)View.VISIBLE else View.GONE
   if(editing){
    binding.saveButton.text="ذخیرهٔ تغییرات این سنجش"
-   binding.saveButton.setOnClickListener{
-    val latest=historyData()
-    val conflict=HistoryTimeline.matchingMeasurement(latest,profileId,p,birthAt,visitAt)?.takeIf{it.optLong("id")!=editingRecordId}
-    if(conflict!=null){
-     toast("برای این فرد در همین تاریخ با همین اندازه‌ها سنجش دیگری ثبت شده است؛ تغییرات ذخیره نشد.")
-    }else{
+   saveEdited = { nutrition ->
+    val result=updateHistory{latest->
+     val conflict=HistoryTimeline.matchingMeasurement(latest,profileId,p,birthAt,visitAt)?.takeIf{it.optLong("id")!=editingRecordId}
+     if(conflict!=null)return@updateHistory null
      val updated=SavedAssessment(p,a,birthAt,visitAt).encode(editingRecordId,date(visitAt),report,profileId)
-     var index=-1
-     for(i in 0 until latest.length()){
-      val old=latest.optJSONObject(i)?:continue
-      if(old.optLong("id")==editingRecordId&&old.optString("patientId")==profileId){
-       old.optString("restoreSourceKey").takeIf{it.isNotBlank()}?.let{updated.put("restoreSourceKey",it)};index=i;break
-      }
+     (nutrition ?: previousNutrition)?.let { updated.put("nutrition", it) }
+     val index=(0 until latest.length()).firstOrNull{i->
+      val old=latest.optJSONObject(i)
+      old!=null&&old.optLong("id")==editingRecordId&&old.optString("patientId")==profileId
      }
-     if(index>=0)latest.put(index,updated) else latest.put(updated)
-     prefs.edit().putString("records",latest.toString()).apply()
+     if(index!=null){
+      latest.getJSONObject(index).optString("restoreSourceKey").takeIf{it.isNotBlank()}?.let{updated.put("restoreSourceKey",it)}
+      latest.put(index,updated)
+     } else latest.put(updated)
+     updated to (index!=null)
+    }
+    if(result==null){
+     toast("برای این فرد در همین تاریخ با همین اندازه‌ها سنجش دیگری ثبت شده است؛ تغییرات ذخیره نشد.")
+     false
+    }else{
+     val (updated,wasPresent)=result
      editingRecordId=0L
-     toast(if(index>=0)"تغییرات این سنجش ذخیره شد" else "این سنجش در سوابق نبود؛ به‌عنوان سنجش تازه ذخیره شد.")
+     toast(if(wasPresent)"تغییرات این سنجش ذخیره شد" else "این سنجش در سوابق نبود؛ به‌عنوان سنجش تازه ذخیره شد.")
      openSavedAssessment(updated)
+     true
     }
    }
+   binding.saveButton.setOnClickListener{saveEdited?.invoke(null)}
   }else{
-  if(matching!=null)binding.saveButton.text="این سنجش قبلاً ثبت شده است"
-  binding.saveButton.setOnClickListener{
-   val latest=historyData()
-   if(HistoryTimeline.matchingMeasurement(latest,profileId,p,birthAt,visitAt)!=null){
-    binding.saveButton.text="این سنجش قبلاً ثبت شده است";toast("برای این فرد در همین تاریخ با همین اندازه‌ها سنجش ثبت شده است.")
-   }else{
-    latest.put(SavedAssessment(p,a,birthAt,visitAt).encode(stamp,date(visitAt),report,profileId))
-    prefs.edit().putString("records",latest.toString()).apply()
-    binding.saveButton.text="این سنجش قبلاً ثبت شده است";toast("ارزیابی ذخیره شد")
+   if(matching!=null)binding.saveButton.text="این سنجش قبلاً ثبت شده است"
+   binding.saveButton.setOnClickListener{
+    val inserted=updateHistory{latest->
+     if(HistoryTimeline.matchingMeasurement(latest,profileId,p,birthAt,visitAt)!=null)return@updateHistory false
+     latest.put(SavedAssessment(p,a,birthAt,visitAt).encode(stamp,date(visitAt),report,profileId))
+     true
+    }
+    binding.saveButton.text="این سنجش قبلاً ثبت شده است"
+    toast(if(inserted)"ارزیابی ذخیره شد" else "برای این فرد در همین تاریخ با همین اندازه‌ها سنجش ثبت شده است.")
    }
-  }
   }
   binding.followUpButton.visibility=if(record==null)View.GONE else View.VISIBLE
   binding.profileButton.visibility=if(record==null)View.GONE else View.VISIBLE
@@ -497,7 +565,40 @@ class MainActivity : AppCompatActivity() {
   binding.freshButton.setOnClickListener{freshAssessment()}
   body.alpha=0f;body.animate().alpha(1f).setDuration(240).start();scroll.post{scroll.scrollTo(0,0)}
  }
- private fun bindPregnancyCard(binding:CardPregnancyAssessmentBinding,p:Patient,a:Assessment,visits:List<Patient>,birthAt:Long){
+ private fun nutritionInputsMatch(record: JSONObject, current: Patient): Boolean {
+  val previous = SavedAssessment.decode(record)?.patient ?: return false
+  return previous.sex == current.sex && previous.days == current.days &&
+   previous.weight == current.weight && previous.height == current.height &&
+   previous.pregnant == current.pregnant && previous.premature == current.premature &&
+   previous.pregnancy == current.pregnancy
+ }
+
+ private fun saveNutritionPlan(
+  record: JSONObject?, profileId: String, patient: Patient, birthAt: Long?, visitAt: Long,
+  plan: JSONObject, newRecord: () -> JSONObject
+ ): Boolean {
+  val created=updateHistory{records->
+   val existing = if (record == null) {
+    HistoryTimeline.matchingMeasurement(records,profileId,patient,birthAt,visitAt)
+   } else HistoryTimeline.records(records).firstOrNull {
+    it.optLong("id") == record.optLong("id") && it.optString("patientId") == profileId &&
+     nutritionInputsMatch(it, patient)
+   }
+   if(record!=null&&existing==null)return@updateHistory null
+   if(existing==null)records.put(newRecord().put("nutrition",plan))
+   else existing.put("nutrition",plan)
+   existing==null
+  }
+  if(created==null){
+   toast("سنجش تغییر کرده است. دوباره آن را از سوابق باز کنید.")
+   return false
+  }
+  record?.put("nutrition", plan)
+  resultSnapshot?.put("nutrition", plan)
+  toast(if (created) "سنجش و برنامهٔ تغذیه ثبت شدند" else "برنامهٔ تغذیه در این سنجش ثبت شد")
+  return true
+ }
+ private fun bindPregnancyCard(binding:CardPregnancyAssessmentBinding,p:Patient,a:Assessment,visits:List<ChartVisit>,visitId:Long,chartAnchor:Long,approximate:Boolean){
   binding.root.visibility=if(p.pregnant)View.VISIBLE else View.GONE
   if(!p.pregnant)return
   binding.referenceButton.setOnClickListener{pregnancyReferences(if(p.pregnancy?.plurality==2)a.pregnancy?.preBmi else null,p.pregnancy?.fetusCount)}
@@ -538,12 +639,16 @@ class MainActivity : AppCompatActivity() {
   binding.totalGoalLabel.text=if(e.totalLow!=null&&e.totalHigh!=null)"هدف کلی بارداری: ${PregnancyAssessment.range(e.totalLow to e.totalHigh)} کیلوگرم افزایش" else "هدف کلی باید توسط تیم مراقبت تعیین شود."
   binding.preBmiCategory.text=e.category
   binding.detailLabel.text=if(higherGuide!=null)"منبع: "+HigherOrderPregnancyReference.source(info.fetusCount) else e.guidance.ifBlank{e.detail}
-  val plot=PregnancyAssessment.plot(p,e,visits)
+  val plot=PregnancyAssessment.plot(p,e,visits,visitId)
   binding.pregnancyChart.root.visibility=if(plot==null)View.GONE else View.VISIBLE
   binding.bandMethodNotice.visibility=if(plot?.envelope!=null)View.VISIBLE else View.GONE
+  if(info.plurality==1&&plot?.envelope!=null){
+   val start=plot.envelope.lower.first().x.toInt()
+   binding.bandMethodNotice.text=SolarDate.persian("ناحیهٔ رنگی، بازهٔ تقریبی وزن‌گیری از هفتهٔ $start تا ۴۰ است. هدف شخصی با ماما یا پزشک تعیین شود.")
+  }
   if(info.plurality==2)binding.bandMethodNotice.text=SolarDate.persian("ناحیهٔ سبز: بازخوانی تقریبی نمودار دوقلویی CDC بر اساس BMI پیش از بارداری؛ هفتهٔ ۵ تا ${TwinPregnancyReference.lastWeek(e.preBmi)}. خارج از این بازه ادامه داده نمی‌شود. هدف شخصی با تیم مراقبت تعیین شود.")
   if(plot!=null){
-   val chart=binding.pregnancyChart;bindChart(chart,plot,birthAt)
+   val chart=binding.pregnancyChart;bindChart(chart,plot.copy(dateBasedAge=approximate),chartAnchor)
    chart.chartTitle.text="روند وزن‌گیری مادر بر حسب هفتهٔ بارداری"
    chart.zoomButton.visibility=View.GONE;chart.bandLegend.visibility=View.GONE
    chart.curveLegend.text=if(plot.envelope!=null)(if(info.plurality==2)"ناحیهٔ سبز: راهنمای دوقلویی CDC" else "ناحیهٔ سبز: راهنمای برآوردی")+"؛ نقطهٔ پررنگ: این نوبت؛ نقاط دیگر: سنجش‌های همین بارداری. برای دیدن وزن و تاریخ هر نوبت، نقطه را لمس کنید." else "نقاط، وزن‌گیری ثبت‌شدهٔ همین بارداری هستند؛ بازهٔ هفتگی عمومی رسم نشده است. با لمس هر نقطه، عدد و تاریخ آن دیده می‌شود."
@@ -551,7 +656,7 @@ class MainActivity : AppCompatActivity() {
  }
  private fun pregnancyReferences(twinBmi:Double?=null,higherCount:Int?=null){
   MaterialAlertDialogBuilder(this).setTitle("مبنای راهنمای وزن‌گیری بارداری")
-   .setMessage("هدف کل تک‌قلویی و دوقلویی از BMI پیش از بارداری و راهنمای NAM/IOM و CDC گرفته می‌شود.\n\nناحیهٔ هفتگی تک‌قلویی، برآورد بین بازهٔ پایان سه‌ماههٔ اول و هدف هفتهٔ ۴۰ است؛ منحنی صدکی یا محدودهٔ تشخیصی نیست. در سه‌ماههٔ اول برچسب کم یا زیادِ هفتگی صادر نمی‌شود.\n\nبرای دوقلویی، ناحیهٔ سبز از بازخوانی تقریبی نمودار اختصاصی CDC در گروه BMI پیش از بارداری گرفته شده است؛ نمودار کمبود وزن تا هفتهٔ ۳۸ و بقیه تا ۴۰ ادامه دارند.\n\nبرای سه‌قلویی، راهنمای حدودی کل از Texas Health و برای چهار و پنج‌قلویی از راهنمای قدیمی POGS 2018 با شواهد پایین گرفته شده است. این اعداد، هدف این هفته یا معیار تشخیص نیستند؛ با BMI شخصی‌سازی نشده‌اند. تعیین هدف نهایی باید به تیم مراقبت بارداری واگذار شود. برای شش‌قلویی و بیشتر یا تعداد نامشخص، بازهٔ خودکار تعیین نمی‌شود. برنامه توصیهٔ کاهش وزن در بارداری نمی‌دهد.")
+   .setMessage("هدف کل تک‌قلویی و دوقلویی از BMI پیش از بارداری و راهنمای NAM/IOM و CDC گرفته می‌شود.\n\nناحیهٔ هفتگی تک‌قلویی، برآورد بین بازهٔ شروع سه‌ماههٔ دوم و هدف هفتهٔ ۴۰ است؛ منحنی صدکی یا محدودهٔ تشخیصی نیست. در سه‌ماههٔ اول برچسب کم یا زیادِ هفتگی صادر نمی‌شود.\n\nبرای دوقلویی، ناحیهٔ سبز از بازخوانی تقریبی نمودار اختصاصی CDC در گروه BMI پیش از بارداری گرفته شده است؛ نمودار کمبود وزن تا هفتهٔ ۳۸ و بقیه تا ۴۰ ادامه دارند.\n\nبرای سه‌قلویی، راهنمای حدودی کل از Texas Health و برای چهار و پنج‌قلویی از راهنمای قدیمی POGS 2018 با شواهد پایین گرفته شده است. این اعداد، هدف این هفته یا معیار تشخیص نیستند؛ با BMI شخصی‌سازی نشده‌اند. تعیین هدف نهایی باید به تیم مراقبت بارداری واگذار شود. برای شش‌قلویی و بیشتر یا تعداد نامشخص، بازهٔ خودکار تعیین نمی‌شود. برنامه توصیهٔ کاهش وزن در بارداری نمی‌دهد.")
    .setPositiveButton("مرجع CDC"){_,_->openReference("https://www.cdc.gov/maternal-infant-health/pregnancy-weight/")}
    .setNeutralButton(if(twinBmi!=null)"نمودار مرجع دوقلویی" else if(higherCount!=null&&higherCount in 3..5)"مرجع حدودی چندقلویی" else "مرجع NAM"){_,_->openReference(if(twinBmi!=null)TwinPregnancyReference.sourceUrl(twinBmi) else if(higherCount!=null&&higherCount in 3..5)HigherOrderPregnancyReference.sourceUrl(higherCount) else "https://www.nationalacademies.org/read/12584/chapter/2")}
    .setNegativeButton("بستن",null).show().also{d->d.window?.decorView?.let{applyFonts(it)}}
@@ -572,6 +677,21 @@ class MainActivity : AppCompatActivity() {
   }
   if(ratio==null)return
   binding.waistValue.text=SolarDate.persian("دور کمر: ${WaistAssessment.number(p.waist!!)} سانتی‌متر · قد: ${WaistAssessment.number(p.height)} سانتی‌متر")
+  if(WaistAssessment.outsideAdultRatioReference(p,a.bmi)&&!p.waistRestricted){
+   val waist=p.waist!!
+   binding.ratioTitle.text="جایگاه دور کمر · مرجع بزرگسالان ایرانی"
+   binding.ratioGauge.visibility=View.GONE
+   binding.circumferenceGauge.visibility=View.VISIBLE
+   binding.circumferenceGauge.setWaist(waist)
+   bindStatus(binding.waistStatus,WaistAssessment.iranianWaistPosition(waist),ink)
+   binding.waistDetail.text="ناحیهٔ مرجع دور کمر: کمتر از ۹۰ سانتی‌متر. نسبت دور کمر به قد: "+
+    SolarDate.persian(WaistAssessment.ratioNumber(ratio).replace('.', '٫'))+
+    ". در BMI برابر یا بالاتر از ۳۵، نمودار برای پیگیری اندازه و فاصله از آستانه است؛ خطر کلی را با وضعیت سلامت فرد بسنجید."
+   binding.waistDetail.visibility=View.VISIBLE
+   binding.waistComparison.text=WaistAssessment.comparison(p,visits)
+   binding.guideButton.setOnClickListener{waistGuide()}
+   return
+  }
   val metric=a.metrics.firstOrNull{it.indicator==WaistAssessment.INDICATOR}
   binding.ratioGauge.setRatio(ratio,metric?.status)
   val color=if(metric?.severity==2)Color.rgb(166,60,51) else if(metric?.severity==1)Color.rgb(155,103,18) else muted
@@ -596,17 +716,18 @@ class MainActivity : AppCompatActivity() {
  }
  private fun waistReferences(){
   MaterialAlertDialogBuilder(this).setTitle("منابع تفسیر دور کمر")
-   .setItems(arrayOf("طبقه‌بندی و محدودهٔ کاربرد · NICE NG246","شرایط نامناسب برای این محاسبه · NHS","روش اندازه‌گیری · WHO STEPS")){_,index->
+   .setItems(arrayOf("نسبت دور کمر به قد · NICE NG246","مرجع دور کمر بزرگسالان ایرانی","دور کمر در BMI بالا · VA/DoD","روش اندازه‌گیری · WHO STEPS")){_,index->
     openReference(when(index){
      0->"https://www.nice.org.uk/guidance/ng246/chapter/Identifying-and-assessing-overweight-obesity-and-central-adiposity"
-     1->"https://www.nhs.uk/health-assessment-tools/calculate-your-waist-to-height-ratio"
+     1->"https://pubmed.ncbi.nlm.nih.gov/20433230/"
+     2->"https://www.healthquality.va.gov/HEALTHQUALITY/guidelines/CD/obesity/OBE-CPG_2025-Guideline_final_20251105.pdf"
      else->"https://www.who.int/docs/default-source/ncds/ncd-surveillance/steps/part3-section5.pdf"
     })
    }.setNegativeButton("بستن",null).show().also{d->d.window?.decorView?.let{applyFonts(it)}}
  }
  private fun openReference(url:String){try{startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(url)))}catch(_:Exception){toast("برنامه‌ای برای بازکردن این منبع پیدا نشد.")}}
 
- private fun bindChart(binding:ViewGrowthChartBinding,plot:ReferencePlot,birthAt:Long){
+ private fun bindChart(binding:ViewGrowthChartBinding,plot:ReferencePlot,chartAnchor:Long){
   val needsMore=plot.history.isEmpty()&&plot.curves.isEmpty()&&plot.envelope==null
   binding.singlePointNotice.visibility=if(needsMore)View.VISIBLE else View.GONE
   for(view in listOf(binding.chart,binding.curveLegend,binding.bandLegend,binding.pointCount,binding.zoomButton))view.visibility=if(needsMore)View.GONE else View.VISIBLE
@@ -616,7 +737,7 @@ class MainActivity : AppCompatActivity() {
   binding.fullscreenButton.setOnClickListener{
    binding.fullscreenButton.isEnabled=false
    val displayed=binding.chart.snapshotPlot()
-   val payload=JSONObject().put("plot",ChartExplorerData.encode(displayed)).put("birth",birthAt)
+   val payload=JSONObject().put("plot",ChartExplorerData.encode(displayed)).put("chartAnchor",chartAnchor)
     .put("title",binding.chartTitle.text.toString()).put("records",JSONArray(chartRecords.toString()))
     .put("legend",listOf(binding.curveLegend,binding.bandLegend).filter{it.visibility==View.VISIBLE}.joinToString("\n"){it.text.toString()}+
      if(displayed.gestationalWeekAxis)"\nمحدوده‌های بارداری راهنمای تقریبی‌اند؛ هدف نهایی و تفسیر روند باید با تیم مراقبت تعیین شود." else "")
@@ -629,13 +750,19 @@ class MainActivity : AppCompatActivity() {
     }}catch(_:Exception){file.delete();runOnUiThread{binding.fullscreenButton.isEnabled=true;toast("باز کردن نمودار ممکن نشد؛ دوباره تلاش کنید.")}}
    }
   }
-  binding.chart.onPointSelected={point->binding.coordinates.text=chartPointInfo(binding.chart,point,birthAt);binding.coordinates.visibility=View.VISIBLE}
+  binding.chart.onPointSelected={point->binding.coordinates.text=chartPointInfo(binding.chart,point,chartAnchor);binding.coordinates.visibility=View.VISIBLE}
   binding.chart.onSelectionCleared={binding.coordinates.visibility=View.GONE}
   binding.pointCount.text=SolarDate.persian("${plot.history.size+1} نقطه؛ برای دیدن مختصات، نقطه را لمس کنید.")
  }
- private fun report(p:Patient,a:Assessment,birthAt:Long=birth,visitAt:Long=visit)=buildString{
-  append("گزارش سنجش رشدآوا\n${p.name.ifBlank{"بدون نام"}}\nتاریخ سنجش: ${date(visitAt)}\nتولد: ${date(birthAt)} (شمسی)\nسن: ${ageDescription(p.days)}\nجنسیت: ${if(p.sex==1)"پسر / مرد" else "دختر / زن"}\nوزن: ${p.weight} کیلوگرم | قد ثبت‌شده: ${p.height} سانتی‌متر\nمرجع: ${a.group}\n")
-  append("${if(p.pregnant)"BMI فعلی" else "BMI"}: ${String.format(Locale.US,"%.2f",a.bmi)}\n")
+ private fun usesAdultBmi(p:Patient,a:Assessment)=if(p.pregnant)a.pregnancy!=null&&p.days>=6575 else a.adult
+ private fun bmiText(value:Double,adult:Boolean,decimals:Int):String {
+  val text=if(adult)BmiGaugeRanges.adultNumber(value,decimals) else String.format(Locale.US,"%.${decimals}f",value)
+  return SolarDate.persian(text.replace('.','٫'))
+ }
+ private fun report(p:Patient,a:Assessment,birthAt:Long?,visitAt:Long)=buildString{
+  val birthLine=birthAt?.let{"تولد: ${date(it)} (شمسی)\n"}.orEmpty()
+  append("گزارش سنجش رشدآوا\n${p.name.ifBlank{"بدون نام"}}\nتاریخ سنجش: ${date(visitAt)}\n${birthLine}سن: ${ageDescription(p.days,birthAt==null)}\nجنسیت: ${if(p.sex==1)"پسر / مرد" else "دختر / زن"}\nوزن: ${p.weight} کیلوگرم | قد ثبت‌شده: ${p.height} سانتی‌متر\nمرجع: ${a.group}\n")
+  append("${if(p.pregnant)"BMI فعلی" else "BMI"}: ${bmiText(a.bmi,!p.pregnant&&a.adult,2)}\n")
   p.pregnancy?.let{info->append("بارداری: ${PregnancyAssessment.weekLabel(info.gestationDays)} · ${PregnancyAssessment.pluralityLabel(info.plurality,info.fetusCount)}\nوزن پیش از بارداری: ${info.preWeight} کیلوگرم\n")}
   for(m in a.metrics){
    append("\n${m.title}: ${m.status}\n${m.detail}\n")
@@ -643,7 +770,22 @@ class MainActivity : AppCompatActivity() {
   }
   append("\n${a.notes.joinToString("\n")}\nغربالگری؛ جایگزین تشخیص و معاینه نیست.")
  }
- private fun historyData():JSONArray {
+ private fun storeDraft(value:JSONObject?)=synchronized(historyLock){
+  prefs.edit().putString("draft",value?.toString()).apply()
+ }
+ private fun <T> updateHistory(change:(JSONArray)->T):T=synchronized(historyLock){
+  val records=historyData()
+  val result=change(records)
+  prefs.edit().putString("records",records.toString()).apply()
+  result
+ }
+ private fun removeFromHistory(shouldRemove:(JSONObject)->Boolean)=updateHistory{records->
+  for(i in records.length()-1 downTo 0){
+   val record=records.optJSONObject(i)?:continue
+   if(shouldRemove(record))records.remove(i)
+  }
+ }
+ private fun historyData():JSONArray = synchronized(historyLock){
   val arr=try{JSONArray(prefs.getString("records","[]"))}catch(_:Exception){JSONArray()};var changed=false
   for(i in 0 until arr.length()){
    val record=arr.optJSONObject(i)?:continue
@@ -666,7 +808,7 @@ class MainActivity : AppCompatActivity() {
    }
   }
   if(changed)prefs.edit().putString("records",arr.toString()).apply()
-  return arr
+  arr
  }
  private fun history(profileId:String?=null){
   captureDraft();currentScreen=Screen.HISTORY;openedProfileId=profileId;body.removeAllViews();chartViews.clear()
@@ -680,9 +822,18 @@ class MainActivity : AppCompatActivity() {
    for(group in groups){
     val latest=group.maxBy{it.optLong("visitUtc",it.optLong("id"))}
     val item=ItemPatientProfileBinding.inflate(layoutInflater,binding.recordsContainer,true)
+    val profileId=latest.optString("patientId")
+    val displayName=latest.optString("name").ifBlank{"بدون نام"}
     item.patientName.text=latest.optString("name")
     item.profileSummary.text=SolarDate.persian("${group.size} سنجش · آخرین نوبت: ${latest.optString("date")}")
-    item.openProfileButton.setOnClickListener{history(latest.optString("patientId"))}
+    item.deleteProfileButton.contentDescription="حذف کل سوابق $displayName"
+    item.deleteProfileButton.setOnClickListener{
+     MaterialAlertDialogBuilder(this).setTitle("حذف کل سوابق این فرد؟")
+      .setMessage(SolarDate.persian("همهٔ ${group.size} سنجش ثبت‌شده برای «$displayName» حذف می‌شود. این کار قابل بازگشت نیست."))
+      .setNegativeButton("انصراف",null).setPositiveButton("حذف همه"){_,_->deleteProfile(profileId);history()}
+      .show().also{d->d.window?.decorView?.let{applyFonts(it)}}
+    }
+    item.openProfileButton.setOnClickListener{history(profileId)}
     item.followUpButton.setOnClickListener{startFollowUp(latest)}
    }
   }else{
@@ -693,7 +844,7 @@ class MainActivity : AppCompatActivity() {
     binding.followUpButton.visibility=View.VISIBLE;binding.followUpButton.setOnClickListener{startFollowUp(latest)}
     val latestSaved=SavedAssessment.decode(latest)?:LegacyAssessmentReader.read(latest,engine)
     val hasPregnancy=records.any{r->(SavedAssessment.decode(r)?:LegacyAssessmentReader.read(r,engine))?.patient?.pregnant==true}
-    if(hasPregnancy&&latestSaved!=null&&latestSaved.patient.sex==2&&latestSaved.patient.days>=6575){
+    if(hasPregnancy&&latestSaved!=null&&PregnancyAssessment.canRecord(latestSaved.patient.sex,latestSaved.patient.days)){
      binding.newPregnancyButton.visibility=View.VISIBLE;binding.newPregnancyButton.setOnClickListener{newPregnancy(latest)}
     }
    }
@@ -704,9 +855,8 @@ class MainActivity : AppCompatActivity() {
     item.deleteButton.setOnClickListener{
      MaterialAlertDialogBuilder(this).setTitle("حذف این سنجش؟").setMessage("فقط این نوبت از پرونده حذف می‌شود.")
       .setNegativeButton("انصراف",null).setPositiveButton("حذف"){_,_->
-       val remaining=JSONArray()
-       for(r in HistoryTimeline.records(historyData()))if(!(r.optLong("id")==record.optLong("id")&&r.optString("patientId")==profileId))remaining.put(r)
-       prefs.edit().putString("records",remaining.toString()).apply();history(profileId)
+       removeFromHistory{it.optLong("id")==record.optLong("id")&&it.optString("patientId")==profileId}
+       history(profileId)
       }.show().also{d->d.window?.decorView?.let{applyFonts(it)}}
     }
    }
@@ -714,39 +864,55 @@ class MainActivity : AppCompatActivity() {
   }
   scroll.post{scroll.scrollTo(0,0)}
  }
+ private fun deleteProfile(profileId:String){
+  removeFromHistory{it.optString("patientId")==profileId}
+  if(activePatientId==profileId){
+   activePatientId="";pregnancyId="";editingRecordId=0L
+   draft.put("patientId","").put("pregnancyId","")
+   storeDraft(draft)
+  }
+  toast("کل سوابق این فرد حذف شد")
+ }
  private fun startFollowUp(record:JSONObject){
   val saved=SavedAssessment.decode(record)?:LegacyAssessmentReader.read(record,engine)
-  captureDraft();editingRecordId=0L;activePatientId=record.optString("patientId");visit=today();selectedBirth=saved!=null
-  birth=saved?.birthUtc?:utc(2000,0,1);sex=saved?.patient?.sex?:2
+  captureDraft();editingRecordId=0L;activePatientId=record.optString("patientId");visit=today();sex=saved?.patient?.sex?:2
   val oldPregnancy=saved?.patient?.pregnancy
   val elapsed=saved?.let{(visit-it.visitUtc)/86400000}
   val continued=if(oldPregnancy!=null&&elapsed!=null)PregnancyAssessment.advance(oldPregnancy,elapsed) else null
   val carryPregnant=saved?.patient?.pregnant==true&&(oldPregnancy==null||continued!=null)
   pregnancyId=continued?.episodeId?:""
-  draft=JSONObject().put("patientId",activePatientId).put("name",saved?.patient?.name?:record.optString("name")).put("birth",birth).put("visit",visit).put("selected",selectedBirth).put("sex",sex)
-   .put("lying",selectedBirth&&(visit-birth)/86400000<731).put("pre",saved?.patient?.premature?:false).put("preg",carryPregnant).put("waistRestricted",false)
+  draft=JSONObject().put("patientId",activePatientId).put("name",saved?.patient?.name?:record.optString("name")).withSavedAge(saved).put("visit",visit).put("sex",sex)
+   .put("lying",saved?.birthUtc?.let{AssessmentAge.elapsedDays(it,visit)<731}==true).put("pre",saved?.patient?.premature?:false).put("preg",carryPregnant).put("waistRestricted",false)
    .put("pregnancyId",pregnancyId).put("prePregnancyWeight",continued?.preWeight?.toString()?:"").put("pregnancyWeek",continued?.let{(it.gestationDays/7).toString()}?:"")
    .put("pregnancyDay",continued?.let{(it.gestationDays%7).toString()}?:"0").put("pregnancyPlurality",continued?.plurality?:0).put("fetusCount",continued?.fetusCount?.toString()?:"")
-  prefs.edit().putString("draft",draft.toString()).apply();currentScreen=Screen.RESULT;form()
+  state.restoreForm(draft)
+  storeDraft(draft);currentScreen=Screen.RESULT;form()
   if(saved==null)toast("تاریخ تولد و جنسیت این پرونده قدیمی را تکمیل کنید؛ اندازه‌های جدید را وارد کنید.")
+ }
+ private fun JSONObject.withSavedAge(saved:SavedAssessment?):JSONObject {
+  val actualBirth=saved?.birthUtc
+  if(actualBirth!=null)return put("selected",true).put("birth",actualBirth)
+  if(saved!=null)put("approximateAge",true).put("approximateYears",AssessmentAge.approximateYears(saved.patient.days).toString())
+  return put("selected",false)
  }
  private fun plainNumber(value:Double)=if(value%1.0==0.0)value.toInt().toString() else value.toString()
  private fun startEdit(record:JSONObject){
   val saved=SavedAssessment.decode(record)?:return
   captureDraft();activePatientId=record.optString("patientId");editingRecordId=record.optLong("id")
-  visit=saved.visitUtc;birth=saved.birthUtc;selectedBirth=true;sex=saved.patient.sex
+  visit=saved.visitUtc;sex=saved.patient.sex
   val p=saved.patient;val info=p.pregnancy
   pregnancyId=info?.episodeId?:""
   draft=JSONObject().put("patientId",activePatientId).put("name",p.name)
    .put("weight",plainNumber(p.weight)).put("height",plainNumber(p.height))
    .put("head",p.head?.let{plainNumber(it)}?:"").put("waist",p.waist?.let{plainNumber(it)}?:"")
    .put("lying",p.lying).put("pre",p.premature).put("preg",p.pregnant).put("waistRestricted",p.waistRestricted)
-   .put("birth",birth).put("visit",visit).put("selected",true).put("sex",sex)
+   .withSavedAge(saved).put("visit",visit).put("sex",sex)
    .put("pregnancyId",pregnancyId).put("prePregnancyWeight",info?.let{plainNumber(it.preWeight)}?:"")
    .put("pregnancyWeek",info?.let{(it.gestationDays/7).toString()}?:"")
    .put("pregnancyDay",info?.let{(it.gestationDays%7).toString()}?:"0")
    .put("pregnancyPlurality",info?.plurality?:0).put("fetusCount",info?.fetusCount?.toString()?:"")
-  prefs.edit().putString("draft",draft.toString()).apply();currentScreen=Screen.RESULT;form()
+  state.restoreForm(draft)
+  storeDraft(draft);currentScreen=Screen.RESULT;form()
   toast("اطلاعات این سنجش در فرم بارگذاری شد؛ پس از تغییر، دوباره محاسبه کنید.")
  }
  private fun cancelEdit(){
@@ -797,15 +963,39 @@ class MainActivity : AppCompatActivity() {
   binding.restoreSummary.text=SolarDate.persian("در فایل: ${BackupCodec.profileCount(data.records)} پرونده و ${data.records.length()} سنجش\nسنجش جدید: ${plan.added}\nتکراری: ${plan.duplicates}\nتعارض شناسه با حفظ هر دو سنجش: ${plan.preservedConflicts}")
   val form=binding.restoreFormCheckbox;form.isEnabled=data.draft.length()>0
   val dialog=MaterialAlertDialogBuilder(this).setTitle("بازیابی این پشتیبان؟").setView(panel).setNegativeButton("انصراف",null).setPositiveButton("افزودن اطلاعات"){_,_->
-   val restoreForm=form.isChecked;val latest=historyData().toString()
+   val restoreForm=form.isChecked
+   historyData() // Normalize legacy data before merging, as in regular history reads.
+   val expectedDraft=synchronized(historyLock){prefs.getString("draft",null)}
+   val replacementDraft=data.draft.toString().takeIf{restoreForm}
    backupTask({
-    val merged=BackupCodec.merge(JSONArray(latest),data.records);val old=prefs.getString("records","[]")?:"[]";val oldDraft=prefs.getString("draft","{}")?:"{}"
-    val edit=prefs.edit().putString("records",merged.records.toString());if(restoreForm)edit.putString("draft",data.draft.toString())
-    if(!edit.commit()){prefs.edit().putString("records",old).putString("draft",oldDraft).commit();throw BackupException("ذخیرهٔ بازیابی ناموفق بود؛ فضای دستگاه را بررسی کنید.")}
-    merged
-   }){merged->
-    if(restoreForm)state.restoreForm(JSONObject(data.draft.toString()))
-    backupScreen();toast(SolarDate.persian("بازیابی انجام شد؛ ${merged.added} سنجش اضافه و ${merged.duplicates} تکراری رد شد."))
+    BackupCodec.mergeLatest(data.records,
+     readSnapshot={synchronized(historyLock){prefs.getString("records","[]")?:"[]"}},
+     commitIfCurrent={snapshot,merged->
+      synchronized(historyLock){
+       val latest=prefs.getString("records","[]")?:"[]"
+       if(latest!=snapshot) null else {
+        val oldDraft=prefs.getString("draft",null)
+        val replaceDraft=replacementDraft!=null&&oldDraft==expectedDraft
+        val edit=prefs.edit().putString("records",merged.records.toString())
+        if(replaceDraft)edit.putString("draft",replacementDraft)
+        if(!edit.commit()){
+         val rollback=prefs.edit().putString("records",snapshot)
+         if(replaceDraft)rollback.putString("draft",oldDraft)
+         rollback.commit()
+         throw BackupException("ذخیرهٔ بازیابی ناموفق بود؛ فضای دستگاه را بررسی کنید.")
+        }
+        replaceDraft
+       }
+      }
+     })
+   }){(merged,draftRestored)->
+    val onForm=currentScreen==Screen.FORM
+    if(onForm)captureDraft() // Give newer live input priority over the restored draft.
+    val useDraft=draftRestored&&!onForm&&prefs.getString("draft",null)==replacementDraft
+    if(useDraft)state.restoreForm(JSONObject(requireNotNull(replacementDraft)))
+    if(currentScreen==Screen.BACKUP)backupScreen()
+    val draftNotice=if(restoreForm&&!useDraft)"\nورودی جاری فرم حفظ شد." else ""
+    toast(SolarDate.persian("بازیابی انجام شد؛ ${merged.added} سنجش اضافه و ${merged.duplicates} تکراری رد شد."+draftNotice))
    }
   }.create();dialog.show();applyFonts(dialog.window!!.decorView)
  }
@@ -815,7 +1005,8 @@ class MainActivity : AppCompatActivity() {
  private fun utc(y:Int,m:Int,d:Int)=Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply{clear();set(y,m,d)}.timeInMillis
  private fun today():Long{val c=Calendar.getInstance();return utc(c.get(Calendar.YEAR),c.get(Calendar.MONTH),c.get(Calendar.DAY_OF_MONTH))}
  private fun date(ms:Long)=SolarDate.fromUtc(ms).display()
- private fun ageDescription(days:Int):String {
+ private fun ageDescription(days:Int,approximate:Boolean=false):String {
+  if(approximate)return SolarDate.persian("حدود ${AssessmentAge.approximateYears(days)} سال")
   val months=days/30.4375
   return SolarDate.persian(if(months>=228)"${(months/12).toInt()} سال" else if(days<31)"$days روز" else if(months<24)"${months.toInt()} ماه" else "${(months/12).toInt()} سال و ${(months%12).toInt()} ماه")
  }
@@ -826,7 +1017,7 @@ class MainActivity : AppCompatActivity() {
    result(saved.patient,withIndicators,saved.birthUtc,saved.visitUtc,record);return
   }
   // Historical v1 reports contained only text; show the original report without guessing clinical inputs.
-  captureDraft();resultFromHistory=true;currentScreen=Screen.RESULT;viewedRecord=record;resultSnapshot=null;body.removeAllViews();chartViews.clear()
+  captureDraft();resultFromHistory=true;currentScreen=Screen.RESULT;viewedRecord=record;resultSnapshot=null;nutritionCard=null;restoredNutrition=null;body.removeAllViews();chartViews.clear()
   body.addView(label("ارزیابی ثبت‌شده",24,ink,true));gap();body.addView(label(record.optString("name")+" · "+record.optString("date"),14,muted));gap()
   card(fill=Color.rgb(19,65,76)){v->v.addView(statusLabel(record.optString("status"),22,Color.WHITE));v.addView(label("گزارش نسخهٔ قبلی",12,Color.rgb(209,230,232)))}
   card{v->v.addView(label("گزارش کامل ثبت‌شده",17,ink,true));gap(v);v.addView(label(record.optString("report"),14,ink).apply{setTextIsSelectable(true)})}

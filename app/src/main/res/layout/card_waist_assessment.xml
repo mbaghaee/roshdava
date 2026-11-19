@@ -10,6 +10,9 @@
         <ir.mbaghaee.bmi.WaistRatioGaugeView android:id="@+id/ratio_gauge"
             android:layout_width="match_parent" android:layout_height="wrap_content"
             android:minHeight="@dimen/waist_gauge_height" android:saveEnabled="false" />
+        <ir.mbaghaee.bmi.WaistCircumferenceGaugeView android:id="@+id/circumference_gauge"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:minHeight="@dimen/waist_gauge_height" android:saveEnabled="false" android:visibility="gone" />
         <TextView android:id="@+id/waist_status" style="@style/GrowthText.Section" android:textSize="18sp"
             android:layout_width="wrap_content" tools:text="چربی مرکزی افزایش‌یافته" />
         <TextView android:id="@+id/waist_detail" style="@style/GrowthText.Muted" android:textSize="13sp" />

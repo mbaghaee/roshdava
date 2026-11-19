@@ -27,10 +27,18 @@
             </com.google.android.material.button.MaterialButtonToggleGroup>
             <com.google.android.material.button.MaterialButton android:id="@+id/birth_button"
                 style="@style/GrowthButton.Outlined" android:text="انتخاب تاریخ تولد · شمسی" />
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/approximate_age_checkbox"
+                style="@style/GrowthCheckBox" android:saveEnabled="false" android:text="فقط سن تقریبی را می‌دانم (بزرگسال)" />
+            <com.google.android.material.textfield.TextInputLayout android:id="@+id/approximate_age_box"
+                style="@style/GrowthField" android:hint="سن تقریبی در زمان سنجش · سال" android:visibility="gone"
+                app:helperText="۱۹ تا ۱۲۰ سال؛ مثلاً ۵۰. برای کودکان تاریخ تولد را وارد کنید.">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/approximate_age_input"
+                    style="@style/GrowthInput" android:inputType="number" android:maxLength="3"
+                    android:digits="0123456789۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩"
+                    android:saveEnabled="false" android:textDirection="ltr" />
+            </com.google.android.material.textfield.TextInputLayout>
             <com.google.android.material.button.MaterialButton android:id="@+id/visit_button"
                 style="@style/GrowthButton.Outlined" android:text="تاریخ سنجش · شمسی" />
-            <TextView style="@style/GrowthText.Muted" android:textSize="11sp"
-                android:text="سن از فاصلهٔ واقعی تولد تا روز سنجش محاسبه می‌شود." />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
     <com.google.android.material.card.MaterialCardView style="@style/GrowthCard">

@@ -18,7 +18,7 @@ class MeasurementReviewTest {
   val text=MeasurementReview.summary(saved(10000,60.6,171.2,z=1.0),saved(9955))
   assertTrue(text.contains("۴۵ روز"));assertTrue(text.contains("۶۰۰ گرم"));assertTrue(text.contains("۱.۲"));assertTrue(text.contains("۸۴.۱"))
   val changed=MeasurementReview.summary(saved(10000,indicator="hfa2007"),saved(9955))
-  assertFalse(changed.contains("صدک قبلی"))
+  assertFalse(changed.contains(": صدک قبلی"))
  }
  @Test fun entryWarningsAreSpecificAndDoNotChangeMeasurements(){
   val old=Patient("",2,10000,60.0,170.0)

@@ -39,18 +39,18 @@ object BackupCodec {
  }
  fun profileCount(records:JSONArray)=HistoryTimeline.records(records).map{it.optString("patientId")}.distinct().size
  private fun validateDraft(draft:JSONObject){
-  for(key in listOf("name","weight","height","head","waist","patientId","pregnancyId","prePregnancyWeight","pregnancyWeek","pregnancyDay","fetusCount"))check(!draft.has(key)||draft.opt(key) is String,"فرم ذخیره‌شده در پشتیبان نامعتبر است.")
-  for(key in listOf("selected","lying","pre","preg","waistRestricted"))check(!draft.has(key)||draft.opt(key) is Boolean,"فرم ذخیره‌شده در پشتیبان نامعتبر است.")
+  for(key in listOf("name","weight","height","head","waist","patientId","pregnancyId","prePregnancyWeight","pregnancyWeek","pregnancyDay","fetusCount","approximateYears"))check(!draft.has(key)||draft.opt(key) is String,"فرم ذخیره‌شده در پشتیبان نامعتبر است.")
+  for(key in listOf("selected","lying","pre","preg","waistRestricted","approximateAge"))check(!draft.has(key)||draft.opt(key) is Boolean,"فرم ذخیره‌شده در پشتیبان نامعتبر است.")
   for(key in listOf("birth","visit","sex","pregnancyPlurality"))check(!draft.has(key)||draft.opt(key) is Number,"تاریخ یا مشخصات فرم ذخیره‌شده نامعتبر است.")
-  if(draft.optBoolean("selected")){
+  if(draft.optBoolean("selected") || draft.optBoolean("approximateAge")){
    check(draft.optInt("sex") in 1..2,"جنسیت فرم ذخیره‌شده نامعتبر است.")
    val birth=draft.optLong("birth");val visit=draft.optLong("visit")
    // A partially completed form may have invalid date order; preserve it for editing, but bound calendar years.
-   check(birth in -2208988800000L..7258118400000L&&visit in -2208988800000L..7258118400000L,"تاریخ فرم ذخیره‌شده خارج از محدوده است.")
+   check((draft.optBoolean("approximateAge") || birth in -2208988800000L..7258118400000L)&&visit in -2208988800000L..7258118400000L,"تاریخ فرم ذخیره‌شده خارج از محدوده است.")
   }
  }
  private fun validate(records:JSONArray){
-  val identities=mutableMapOf<String,Pair<Long,Int>>()
+  val identities=mutableMapOf<String,Pair<Long?,Int>>()
   for(i in 0 until records.length()){
    val r=records.optJSONObject(i)?:throw BackupException("یک سنجش داخل فایل نامعتبر است.")
    val id=r.optString("patientId");check(id.isNotBlank()&&id.length<=200&&r.optLong("id")>0,"شناسهٔ پرونده یا سنجش نامعتبر است.")
@@ -58,22 +58,37 @@ object BackupCodec {
    if(r.has("patient")||r.has("assessment")){
     val saved=SavedAssessment.decode(r)?:throw BackupException("دادهٔ ساختارمند یکی از سنجش‌ها ناقص است.")
     val p=saved.patient;check(p.days in 0..43920&&p.weight in .3..400.0&&p.height in 25.0..250.0&&saved.assessment.bmi>0,"مقادیر یک سنجش نامعتبر است.")
-    check(saved.birthUtc in -2208988800000L..7258118400000L&&saved.visitUtc>=saved.birthUtc&&(saved.visitUtc-saved.birthUtc)/86400000==p.days.toLong(),"تاریخ و سن یک سنجش سازگار نیست.")
+    val birth=saved.birthUtc
+    val dates= -2208988800000L..7258118400000L
+    check(if(birth==null)saved.visitUtc in dates else birth in dates&&saved.visitUtc>=birth&&(saved.visitUtc-birth)/86400000==p.days.toLong(),
+     "تاریخ و سن یک سنجش سازگار نیست.")
     val identity=saved.birthUtc to p.sex;check(identities[id]==null||identities[id]==identity,"تاریخ تولد یا جنسیت در یک پرونده یکسان نیست.");identities[id]=identity
    }
   }
  }
  private fun sameVisit(a:JSONObject,b:JSONObject):Boolean {
   val x=SavedAssessment.decode(a);val y=SavedAssessment.decode(b)
-  if(x!=null&&y!=null)return x.patient==y.patient&&x.birthUtc==y.birthUtc&&x.visitUtc==y.visitUtc
+  if(x!=null&&y!=null){
+   val incomingNutrition=b.optJSONObject("nutrition")
+   val sameNutrition=incomingNutrition==null||a.optJSONObject("nutrition")?.toString()==incomingNutrition.toString()
+   return x.patient==y.patient&&x.birthUtc==y.birthUtc&&x.visitUtc==y.visitUtc&&sameNutrition
+  }
   return a.optString("report")==b.optString("report")
+ }
+ internal fun mergeLatest(incoming:JSONArray,readSnapshot:()->String,commitIfCurrent:(String,RestorePlan)->Boolean?):Pair<RestorePlan,Boolean>{
+  while(true){
+   val snapshot=readSnapshot()
+   val plan=merge(JSONArray(snapshot),incoming)
+   val draftRestored=commitIfCurrent(snapshot,plan)
+   if(draftRestored!=null)return plan to draftRestored
+  }
  }
  fun merge(existing:JSONArray,incoming:JSONArray):RestorePlan {
   validate(existing);validate(incoming)
   val result=JSONArray(existing.toString());val lookup=mutableMapOf<String,JSONObject>();val sources=mutableMapOf<String,MutableList<JSONObject>>()
   fun key(r:JSONObject)=r.getString("patientId")+":"+r.getLong("id")
   for(r in HistoryTimeline.records(result)){lookup[key(r)]=r;sources.getOrPut(r.optString("restoreSourceKey").ifBlank{key(r)}){mutableListOf()}.add(r)}
-  val demographics=mutableMapOf<String,Pair<Long,Int>>()
+  val demographics=mutableMapOf<String,Pair<Long?,Int>>()
   for(r in HistoryTimeline.records(result))SavedAssessment.decode(r)?.let{demographics[r.getString("patientId")]=it.birthUtc to it.patient.sex}
   var next=HistoryTimeline.records(result).maxOfOrNull{it.optLong("id")}?:0L;var added=0;var duplicates=0;var conflicts=0
   for(raw in HistoryTimeline.records(incoming)){

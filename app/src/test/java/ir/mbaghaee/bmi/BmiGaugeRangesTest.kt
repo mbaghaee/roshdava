@@ -25,6 +25,12 @@ class BmiGaugeRangesTest {
   assertEquals("+1.0001",BmiGaugeRanges.number(1.0001,false,true))
   assertEquals("-2.0001",BmiGaugeRanges.number(-2.0001,false,false))
  }
+ @Test fun displayedAdultBmiPreservesAllClassificationBoundaries(){
+  for(value in listOf(18.49,24.96,29.99,34.999,39.9999)){
+   assertEquals(value,BmiGaugeRanges.adultNumber(value).toDouble(),1e-12)
+  }
+  assertEquals("25.0",BmiGaugeRanges.adultNumber(25.0))
+ }
  @Test fun everyScaleHasOneLabelPerBand(){
   for((adult,young) in listOf(true to false,false to true,false to false)){
    val cuts=BmiGaugeRanges.cuts(adult,young)

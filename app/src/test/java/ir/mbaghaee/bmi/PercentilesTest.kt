@@ -12,7 +12,7 @@ class PercentilesTest {
   val p=Patient("",2,2200,22.0,120.0);val a=engine.assess(p)
   for(m in a.metrics){val near=engine.plotFor(p,m)!!;val full=engine.plotFor(p,m,true)!!
    assertTrue(near.point.x in near.xMin..near.xMax);assertTrue(full.xMin<=near.xMin&&full.xMax>=near.xMax)
-   assertEquals(listOf(-3,-2,0,2,3),near.curves.map{it.z});assertTrue(near.curves.all{it.points.size==81})
+   assertEquals(listOf(-3,-2,-1,0,1,2,3),near.curves.map{it.z});assertTrue(near.curves.all{it.points.size==81})
    for(i in 0..80){val ys=near.curves.map{it.points[i].y};assertEquals(ys.sorted(),ys)}
   }
   val h=engine.plotFor(p,a.metrics[1])!!;assertEquals(120.0,h.point.y,1e-9)

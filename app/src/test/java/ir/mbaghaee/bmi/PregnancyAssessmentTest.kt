@@ -24,29 +24,35 @@ class PregnancyAssessmentTest {
    val end=PregnancyAssessment.weeklyRange(280,total)!!
    assertEquals(total.first,end.first,1e-10);assertEquals(total.second,end.second,1e-10)
   }
-  assertNull(PregnancyAssessment.weeklyRange(91,11.5 to 16.0))
+  assertNull(PregnancyAssessment.weeklyRange(97,11.5 to 16.0))
+  assertEquals(.5 to 2.0,PregnancyAssessment.weeklyRange(98,11.5 to 16.0))
   assertNull(PregnancyAssessment.weeklyRange(281,11.5 to 16.0))
   val mid=PregnancyAssessment.weeklyRange(140,11.5 to 16.0)!!
-  assertEquals(.5+11*7.0/27,mid.first,1e-10);assertEquals(2+14*7.0/27,mid.second,1e-10)
+  assertEquals(.5+11*6.0/26,mid.first,1e-10);assertEquals(2+14*6.0/26,mid.second,1e-10)
  }
  @Test fun firstTrimesterAndMultiplesDoNotGetAFalseWeeklyClassification(){
-  val early=PregnancyAssessment.evaluate(patient(gain=0.0,gestation=56))!!
+  val early=PregnancyAssessment.evaluate(patient(gain=0.0,gestation=97))!!
   assertEquals(PregnancyAssessment.FIRST,early.status);assertNull(early.weekLow)
   val twin=PregnancyAssessment.evaluate(patient(plurality=2))!!
   assertEquals(PregnancyAssessment.INDIVIDUAL,twin.status);assertNull(twin.weekLow);assertNotNull(twin.totalLow)
   val more=PregnancyAssessment.evaluate(patient(plurality=3))!!
   assertNull(more.totalLow);assertNull(more.weekLow)
-  val adolescent=PregnancyAssessment.evaluate(patient().copy(days=6000))!!
+  assertEquals(PregnancyAssessment.BELOW,PregnancyAssessment.evaluate(patient(gain=0.0,gestation=98))!!.status)
+  assertTrue(PregnancyAssessment.canRecord(2,6200))
+  assertFalse(PregnancyAssessment.canRecord(1,6200))
+  val adolescent=PregnancyAssessment.evaluate(patient().copy(days=6200))!!
   assertEquals(PregnancyAssessment.INDIVIDUAL,adolescent.status);assertNull(adolescent.totalLow)
  }
  @Test fun graphIncludesOnlyTheSamePregnancyAndAllowsWeightLoss(){
   val p=patient(gain=-1.0)
   val same=p.copy(days=9900,weight=58.0,pregnancy=p.pregnancy!!.copy(gestationDays=133))
   val other=p.copy(days=9000,pregnancy=p.pregnancy!!.copy(episodeId="older-pregnancy"))
-  val plot=PregnancyAssessment.plot(p,PregnancyAssessment.evaluate(p)!!,listOf(same,other))!!
+  val plot=PregnancyAssessment.plot(p,PregnancyAssessment.evaluate(p)!!,listOf(ChartVisit(10,same),ChartVisit(11,other)),visitId=12)!!
   assertEquals(1,plot.history.size);assertEquals(-2.0,plot.history.first().y,1e-10)
   assertEquals(-1.0,plot.point.y,1e-10);assertNull(plot.minYValue);assertTrue(plot.gestationalWeekAxis)
-  assertNotNull(plot.envelope);assertTrue(plot.curves.isEmpty())
+  assertEquals(10L,plot.history.single().visitId)
+  assertEquals(12L,plot.point.visitId)
+  assertEquals(14.0,plot.envelope!!.lower.first().x,1e-10);assertTrue(plot.curves.isEmpty())
  }
  @Test fun followUpAdvancesGestationButNotPastTheSamePregnancy(){
   val before=PregnancyInfo(60.0,140,1,"episode")

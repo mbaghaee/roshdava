@@ -26,7 +26,7 @@ class GrowthEngine(private val tables:Map<String,List<GrowthRow>>) {
   if(p.days/30.4375>=60)return p.height
   return p.height+if(p.days<731&&!p.lying).7 else if(p.days>=731&&p.lying)-.7 else 0.0
  }
- fun plotFor(p:Patient,m:Metric,fullRange:Boolean=false,visits:List<Patient> = emptyList()):ReferencePlot? {
+ fun plotFor(p:Patient,m:Metric,fullRange:Boolean=false,visits:List<ChartVisit> = emptyList(),visitId:Long?=null):ReferencePlot? {
   if(m.z==null||m.indicator.isBlank())return null
   val table=m.indicator;val rows=indexed[table]?.get(p.sex)?:return null
   val height=standardHeight(p);val byHeight=table=="wflanthro"||table=="wfhanthro"
@@ -34,7 +34,9 @@ class GrowthEngine(private val tables:Map<String,List<GrowthRow>>) {
   val factor=if(daily)30.4375 else 1.0
   val pointX=if(byHeight)height else p.days/30.4375
   val pointY=when(table){"lenanthro","hfa2007"->height;"bmi2007","bmianthro"->p.weight/(height/100).pow(2);"hcanthro"->p.head?:return null;else->p.weight}
-  val trail=visits.filter{it.sex==p.sex&&!it.premature}.mapNotNull{old->
+  val trail=visits.mapNotNull{visit->
+    val old=visit.patient
+    if(old.sex!=p.sex||old.premature)return@mapNotNull null
    val oldHeight=if(table=="wflanthro")old.height+(if(old.lying)0.0 else .7) else if(table=="wfhanthro")old.height-(if(old.lying).7 else 0.0) else standardHeight(old)
    if(byHeight&&old.days/30.4375>=60)return@mapNotNull null
    val x=if(byHeight)oldHeight else old.days/30.4375
@@ -42,7 +44,7 @@ class GrowthEngine(private val tables:Map<String,List<GrowthRow>>) {
    val r=ref(table,old.sex,(x*factor))?:return@mapNotNull null
    val score=z(value,r,table!="lenanthro"&&table!="hfa2007"&&table!="hcanthro")
    if(!score.isFinite()||abs(score)>if(table=="lenanthro"||table=="hfa2007")6 else if(table=="weianthro"&&score<0)6 else 5)return@mapNotNull null
-   PlotPoint(x,value,old.days)
+   PlotPoint(x,value,old.days,visit.id)
   }.sortedBy{it.day}
   val radius=if(byHeight)15.0 else if(pointX<24)6.0 else if(daily)12.0 else 24.0
   val low=if(fullRange)rows.first().x/factor else max(rows.first().x/factor,min(pointX,trail.minOfOrNull{it.x}?:pointX)-radius)
@@ -60,14 +62,14 @@ class GrowthEngine(private val tables:Map<String,List<GrowthRow>>) {
   }
   if(curves.any{it.points.size<2})return null
   val yLabel=when(table){"lenanthro","hfa2007"->"قد · سانتی‌متر";"bmi2007","bmianthro"->"BMI · kg/m²";"hcanthro"->"دور سر · سانتی‌متر";else->"وزن · کیلوگرم"}
-  return ReferencePlot(if(byHeight)"قد / طول بدن · سانتی‌متر" else "سن · ماه",yLabel,low,high,curves,PlotPoint(pointX,pointY,p.days),"${m.title}: ${String.format(java.util.Locale.US,"%.1f",pointY)}",trail,bands)
+  return ReferencePlot(if(byHeight)"قد / طول بدن · سانتی‌متر" else "سن · ماه",yLabel,low,high,curves,PlotPoint(pointX,pointY,p.days,visitId),"${m.title}: ${String.format(java.util.Locale.US,"%.1f",pointY)}",trail,bands)
  }
- fun measurementTrend(p:Patient,kind:String,visits:List<Patient>):ReferencePlot {
+ fun measurementTrend(p:Patient,kind:String,visits:List<ChartVisit>,visitId:Long?=null):ReferencePlot {
   val years=p.days/30.4375>=228
   val ageUnit=if(years)365.25 else 30.4375
-  fun point(v:Patient)=PlotPoint(v.days/ageUnit,when(kind){"height"->v.height;"bmi"->v.weight/(standardHeight(v)/100).pow(2);else->v.weight},v.days)
-  val trail=visits.filter{it.sex==p.sex}.map(::point).filter{it.y.isFinite()}.sortedBy{it.day}
-  val current=point(p);val all=trail+current
+  fun point(v:Patient,id:Long?)=PlotPoint(v.days/ageUnit,when(kind){"height"->v.height;"bmi"->v.weight/(standardHeight(v)/100).pow(2);else->v.weight},v.days,id)
+  val trail=visits.filter{it.patient.sex==p.sex}.map{point(it.patient,it.id)}.filter{it.y.isFinite()}.sortedBy{it.day}
+  val current=point(p,visitId);val all=trail+current
   val margin=if(years)1.0/12 else 1.0
   val low=max(0.0,all.minOf{it.x}-margin);val high=max(low+2*margin,all.maxOf{it.x}+margin)
   val label=when(kind){"height"->"قد ثبت‌شده · سانتی‌متر";"bmi"->"BMI";else->"وزن ثبت‌شده · کیلوگرم"}

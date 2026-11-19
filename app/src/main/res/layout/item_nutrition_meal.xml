@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" style="@style/GrowthScreen">
+    <TextView android:id="@+id/meal_title" style="@style/GrowthText.Section" />
+    <TextView android:id="@+id/meal_units" style="@style/GrowthText.Muted" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/move_units"
+        style="@style/GrowthButton.Outlined" android:text="انتقال سهم از این وعده" />
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/GrowthField" android:hint="خوراک، مقدار و جایگزین (اختیاری)">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/meal_input" style="@style/GrowthInput"
+            android:singleLine="false" android:inputType="textMultiLine|textCapSentences"
+            android:maxLines="4" android:maxLength="500" />
+    </com.google.android.material.textfield.TextInputLayout>
+</LinearLayout>

@@ -89,7 +89,8 @@
                         style="@style/GrowthNavigationButton" android:text="استفاده از برآورد حفظ وزن" android:visibility="gone" />
                 </LinearLayout>
                 <com.google.android.material.textfield.TextInputLayout
-                    style="@style/GrowthField" android:hint="دلیل انتخاب هدف (اختیاری)">
+                    style="@style/GrowthField" android:hint="دلیل انتخاب هدف (اختیاری)"
+                    app:helperTextEnabled="true" app:helperText="در نسخهٔ متخصص درج می‌شود.">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/nutrition_goal_reason" style="@style/GrowthInput"
                         android:singleLine="false" android:inputType="textMultiLine|textCapSentences"
@@ -111,7 +112,8 @@
                             android:maxLength="5" android:textDirection="ltr" />
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
-                <TextView android:id="@+id/carb_percent" style="@style/GrowthText.Muted" android:accessibilityLiveRegion="polite" />
+                <TextView android:id="@+id/carb_percent" style="@style/GrowthText" android:layout_marginBottom="8dp"
+                    android:accessibilityLiveRegion="polite" />
                 <TextView android:id="@+id/macro_review" style="@style/GrowthText.Muted"
                     android:visibility="gone" />
             </LinearLayout>

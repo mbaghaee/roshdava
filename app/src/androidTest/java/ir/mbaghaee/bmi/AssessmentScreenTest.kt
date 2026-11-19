@@ -47,6 +47,30 @@ class AssessmentScreenTest {
  private fun assertSelected(activity:MainActivity,title:String){
   for(label in listOf("فرم ارزیابی","سوابق سنجش","پشتیبان"))assertEquals(label,label==title,text(activity,label).isSelected)
  }
+ @Test fun adultNutritionPreviewUsesLiveMacroTargetsWithoutWritingAVisit(){
+  val form=JSONObject().put("name","نمونه").put("sex",2).put("approximateAge",true)
+   .put("approximateYears","40").put("visit",1761955200000L).put("weight","75").put("height","165")
+  check(prefs.edit().putString("draft",form.toString()).commit())
+  ActivityScenario.launch(MainActivity::class.java).use{scenario->
+   scenario.onActivity{activity->
+    text(activity,"مشاهدهٔ ارزیابی رشد  ←").performClick()
+    activity.findViewById<View>(R.id.nutrition_toggle).performClick()
+    activity.findViewById<android.widget.EditText>(R.id.target_calories).setText("1800")
+    activity.findViewById<android.widget.EditText>(R.id.protein_percent).setText("20")
+    activity.findViewById<android.widget.EditText>(R.id.fat_percent).setText("30")
+    val macros=activity.findViewById<TextView>(R.id.carb_percent).text.toString()
+    assertTrue(macros.contains("پروتئین · ۲۰٪ · ۹۰ گرم"))
+    assertTrue(macros.contains("۱٫۲ گرم به‌ازای هر کیلوگرم"))
+    activity.findViewById<View>(R.id.plan_toggle).performClick()
+    activity.findViewById<View>(R.id.calculate_plan).performClick()
+    activity.findViewById<View>(R.id.preview_plan).performClick()
+   }
+   onView(withText("نسخهٔ مراجعه‌کننده")).perform(click())
+   onView(withText("اشتراک‌گذاری")).check(matches(androidx.test.espresso.matcher.ViewMatchers.isDisplayed()))
+   assertEquals(0,JSONArray(prefs.getString("records","[]")).length())
+  }
+ }
+
  @Test fun adolescentPregnancyIsRecordedAndUsesIndividualCare(){
   val birth=946684800000L
   val form=JSONObject().put("name","نمونه").put("sex",2).put("selected",true)
